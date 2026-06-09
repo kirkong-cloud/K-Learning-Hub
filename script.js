@@ -3162,7 +3162,7 @@ let siteSettings = {
   announcement: "Welcome to the Learning Hub. Check your quiz credits and continue your lessons regularly."
 };
 
-const API_BASE_URL = ""; // Example: "http://localhost:3000" or your deployed backend URL
+const API_BASE_URL = "https://k-learning-hub.onrender.com"; // Example: "http://localhost:3000" or your deployed backend URL
 
 const SUBJECTS = [
   { id: "FAR", name: "Financial Accounting and Reporting", theme: "blue" },
