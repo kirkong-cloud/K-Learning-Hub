@@ -3162,7 +3162,7 @@ let siteSettings = {
   announcement: "Welcome to the Learning Hub. Check your quiz credits and continue your lessons regularly."
 };
 
-const API_BASE_URL = "https://k-learning-hub.onrender.com"; // Example: "http://localhost:3000" or your deployed backend URL
+const API_BASE_URL = ""; // Example: "http://localhost:3000" or your deployed backend URL
 
 const SUBJECTS = [
   { id: "FAR", name: "Financial Accounting and Reporting", theme: "blue" },
@@ -3198,6 +3198,8 @@ let currentUser = JSON.parse(localStorage.getItem("farCurrentUser") || "null");
 let pendingRegistrationOtp = null;
 let activeQuizUsesPaidCredits = false;
 let activeQuizCreditCost = 0;
+let currentOpenTopicId = null;
+let currentOpenLessonId = "discussion";
 const QUIZ_PRICE_PER_ITEM = 2;
 const SUBSCRIPTION_PRICE_PER_SUBJECT = 50;
 const SUBSCRIPTION_PRICE_ALL_SUBJECTS = 250;
@@ -3914,7 +3916,9 @@ function renderAccountingContent(value) {
   return `<p>${escaped}</p>`;
 }
 
-function openTopic(topicId) {
+function openTopic(topicId, initialLessonId = "discussion") {
+  currentOpenTopicId = topicId;
+  currentOpenLessonId = initialLessonId || "discussion";
   const topic = ensureTopicShape(topics.find(t => t.id === topicId));
   const content = document.getElementById("topicContent");
   const customTabs = topic.tabs || [];
@@ -3939,10 +3943,12 @@ function openTopic(topicId) {
     </article>
   `;
   showPage("topic-detail");
-  showTopicLesson(topic.id, "discussion");
+  showTopicLesson(topic.id, initialLessonId || "discussion");
 }
 
 function showTopicLesson(topicId, lessonId) {
+  currentOpenTopicId = topicId;
+  currentOpenLessonId = lessonId || "discussion";
   const topic = ensureTopicShape(topics.find(t => t.id === topicId));
   const holder = document.getElementById("activeLessonContent");
   if (!topic || !holder) return;
@@ -4107,6 +4113,26 @@ async function deleteTopic() {
   alert("Topic deleted successfully.");
 }
 
+async function refreshLessonViewAfterTabChange(topicId, preferredLessonId = null) {
+  topics = topics.map(ensureTopicShape);
+  initializeSubjectTopics();
+  renderTopics();
+  populateSelects();
+  const topicSelect = document.getElementById("lessonTabTopicSelect");
+  if (topicSelect && topicId) topicSelect.value = topicId;
+  renderLessonTabsList();
+
+  if (currentOpenTopicId === topicId || document.getElementById("topic-detail")?.classList.contains("active-page")) {
+    const topic = ensureTopicShape(topics.find(t => t.id === topicId));
+    if (topic) {
+      const lessonToOpen = preferredLessonId && (preferredLessonId === "discussion" || preferredLessonId === "practice" || topic.tabs.some(tab => tab.id === preferredLessonId))
+        ? preferredLessonId
+        : (topic.tabs.some(tab => tab.id === currentOpenLessonId) ? currentOpenLessonId : "discussion");
+      openTopic(topicId, lessonToOpen);
+    }
+  }
+}
+
 async function addLessonTab() {
   if (currentUser?.role !== "admin") return alert("Admin access only.");
   const topicId = document.getElementById("lessonTabTopicSelect").value;
@@ -4115,15 +4141,25 @@ async function addLessonTab() {
   const title = document.getElementById("lessonTabTitle").value.trim();
   const content = document.getElementById("lessonTabContent").value.trim();
   if (!title || !content) return alert("Please enter tab title and content.");
+
   let id = slugify(title);
   if ((topic.tabs || []).some(tab => tab.id === id)) id = `${id}-${Date.now()}`;
-  topic.tabs.push({ id, title, content, createdAt: new Date().toISOString() });
-  await saveTopicToBackend(topic);
-  await saveData();
-  document.getElementById("lessonTabTitle").value = "";
-  document.getElementById("lessonTabContent").value = "";
-  renderLessonTabsList();
-  alert("Lesson tab added successfully.");
+  const newTab = { id, title, content, createdAt: new Date().toISOString() };
+  topic.tabs.push(newTab);
+
+  try {
+    const savedTopic = await saveTopicToBackend(topic);
+    if (savedTopic) Object.assign(topic, ensureTopicShape(savedTopic));
+    await saveData();
+    document.getElementById("lessonTabTitle").value = "";
+    document.getElementById("lessonTabContent").value = "";
+    await refreshLessonViewAfterTabChange(topic.id, newTab.id);
+    alert("Lesson tab added successfully and is now reflected in the actual lesson page.");
+  } catch (error) {
+    topic.tabs = topic.tabs.filter(tab => tab.id !== newTab.id);
+    console.error(error);
+    alert(error.message || "Lesson tab was not saved. Please check backend connection.");
+  }
 }
 
 async function deleteLessonTab(topicId, tabId) {
@@ -4131,10 +4167,20 @@ async function deleteLessonTab(topicId, tabId) {
   const topic = ensureTopicShape(topics.find(t => t.id === topicId));
   if (!topic) return alert("Topic not found.");
   if (!confirm("Delete this lesson tab?")) return;
+  const originalTabs = [...topic.tabs];
   topic.tabs = topic.tabs.filter(tab => tab.id !== tabId);
-  await saveTopicToBackend(topic);
-  await saveData();
-  renderLessonTabsList();
+
+  try {
+    const savedTopic = await saveTopicToBackend(topic);
+    if (savedTopic) Object.assign(topic, ensureTopicShape(savedTopic));
+    await saveData();
+    await refreshLessonViewAfterTabChange(topic.id, "discussion");
+    alert("Lesson tab deleted successfully.");
+  } catch (error) {
+    topic.tabs = originalTabs;
+    console.error(error);
+    alert(error.message || "Lesson tab was not deleted. Please check backend connection.");
+  }
 }
 
 function startLessonTabEdit(topicId, tabId) {
@@ -4172,25 +4218,39 @@ async function saveLessonTabEdit() {
   const newContent = document.getElementById("editLessonTabContent").value.trim();
   if (!newTitle || !newContent) return alert("Please enter tab title and content.");
 
+  const original = { ...tab };
   tab.title = newTitle;
   tab.content = newContent;
   tab.updatedAt = new Date().toISOString();
 
-  await saveTopicToBackend(topic);
-  await saveData();
-  renderTopics();
-  renderLessonTabsList();
-  cancelLessonTabEdit();
-  alert("Lesson tab updated successfully.");
+  try {
+    const savedTopic = await saveTopicToBackend(topic);
+    if (savedTopic) Object.assign(topic, ensureTopicShape(savedTopic));
+    await saveData();
+    await refreshLessonViewAfterTabChange(topic.id, tab.id);
+    cancelLessonTabEdit();
+    alert("Lesson tab updated successfully and is now reflected in the actual lesson page.");
+  } catch (error) {
+    Object.assign(tab, original);
+    console.error(error);
+    alert(error.message || "Lesson tab was not updated. Please check backend connection.");
+  }
 }
 
 async function saveTopicToBackend(topic) {
-  if (!API_BASE_URL) return;
-  await fetch(`${API_BASE_URL}/api/topics/${topic.id}`, {
+  if (!API_BASE_URL) return topic;
+  const response = await fetch(`${API_BASE_URL}/api/topics/${topic.id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-    body: JSON.stringify(topic)
+    body: JSON.stringify(ensureTopicShape(topic))
   });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.error || "Unable to save topic to backend.");
+  }
+  const index = topics.findIndex(item => item.id === topic.id);
+  if (index !== -1) topics[index] = ensureTopicShape(data);
+  return ensureTopicShape(data);
 }
 
 async function addQuizQuestion() {
@@ -7341,7 +7401,9 @@ function getSubjectColor(subjectId) {
 
 /* Override openTopic so clicked topic also changes subject background */
 const originalOpenTopicForTheme = typeof openTopic === "function" ? openTopic : null;
-function openTopic(topicId) {
+function openTopic(topicId, initialLessonId = "discussion") {
+  currentOpenTopicId = topicId;
+  currentOpenLessonId = initialLessonId || "discussion";
   const topic = ensureTopicShape(topics.find(t => t.id === topicId));
   if (topic?.subject) applySubjectTheme(topic.subject);
   const content = document.getElementById("topicContent");
@@ -7368,8 +7430,8 @@ function openTopic(topicId) {
     </article>
   `;
   showPage("topic-detail");
-  setTimeout(() => showTopicLesson(topic.id, "discussion"), 80);
-  localStorage.setItem(getStudentStorageKey("lastLesson"), JSON.stringify({ topicId: topic.id, lessonId: "discussion" }));
+  showTopicLesson(topic.id, initialLessonId || "discussion");
+  localStorage.setItem(getStudentStorageKey("lastLesson"), JSON.stringify({ topicId: topic.id, lessonId: initialLessonId || "discussion" }));
 }
 
 /* Student preview also demonstrates subject-specific background color */

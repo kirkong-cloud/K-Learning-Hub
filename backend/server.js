@@ -79,6 +79,18 @@ function ensureTopicShape(topic) {
   return topic;
 }
 
+function normalizeLessonTabs(tabs = []) {
+  return Array.isArray(tabs)
+    ? tabs.filter(Boolean).map((tab, index) => ({
+        id: String(tab.id || slugify(tab.title || `lesson-tab-${index + 1}`)).trim(),
+        title: String(tab.title || "Untitled Lesson Tab").trim(),
+        content: String(tab.content || "").trim(),
+        createdAt: tab.createdAt || new Date().toISOString(),
+        updatedAt: tab.updatedAt
+      }))
+    : [];
+}
+
 function getTrialStatus(user) {
   if (user.role === "admin") return { active: true, daysRemaining: null, message: "Admin account" };
   if (!user.trialEndDate) return { active: false, daysRemaining: 0, message: "No trial period assigned." };
@@ -450,11 +462,63 @@ app.put("/api/topics/:id", requireAuth, requireAdmin, (req, res) => {
   topic.discussion = req.body.discussion ?? topic.discussion;
   topic.computation = "";
   topic.formula = "";
-  topic.tabs = Array.isArray(req.body.tabs) ? req.body.tabs : (topic.tabs || []);
+  topic.tabs = Array.isArray(req.body.tabs) ? normalizeLessonTabs(req.body.tabs) : normalizeLessonTabs(topic.tabs || []);
   topic.updatedAt = new Date().toISOString();
 
   writeDatabase(db);
   res.json(ensureTopicShape(topic));
+});
+
+
+
+app.post("/api/topics/:id/tabs", requireAuth, requireAdmin, (req, res) => {
+  const db = readDatabase();
+  const topic = ensureTopicShape(db.topics.find(item => item.id === req.params.id));
+  if (!topic) return res.status(404).json({ error: "Topic not found" });
+
+  const title = String(req.body.title || "").trim();
+  const content = String(req.body.content || "").trim();
+  if (!title || !content) return res.status(400).json({ error: "Tab title and content are required." });
+
+  let id = String(req.body.id || slugify(title)).trim();
+  if (topic.tabs.some(tab => tab.id === id)) id = `${id}-${Date.now()}`;
+  const tab = { id, title, content, createdAt: new Date().toISOString() };
+  topic.tabs.push(tab);
+  topic.updatedAt = new Date().toISOString();
+  writeDatabase(db);
+  res.status(201).json({ topic: ensureTopicShape(topic), tab });
+});
+
+app.put("/api/topics/:id/tabs/:tabId", requireAuth, requireAdmin, (req, res) => {
+  const db = readDatabase();
+  const topic = ensureTopicShape(db.topics.find(item => item.id === req.params.id));
+  if (!topic) return res.status(404).json({ error: "Topic not found" });
+  const tab = topic.tabs.find(item => item.id === req.params.tabId);
+  if (!tab) return res.status(404).json({ error: "Lesson tab not found" });
+
+  const title = String(req.body.title || tab.title || "").trim();
+  const content = String(req.body.content || tab.content || "").trim();
+  if (!title || !content) return res.status(400).json({ error: "Tab title and content are required." });
+
+  tab.title = title;
+  tab.content = content;
+  tab.updatedAt = new Date().toISOString();
+  topic.updatedAt = new Date().toISOString();
+  writeDatabase(db);
+  res.json({ topic: ensureTopicShape(topic), tab });
+});
+
+app.delete("/api/topics/:id/tabs/:tabId", requireAuth, requireAdmin, (req, res) => {
+  const db = readDatabase();
+  const topic = ensureTopicShape(db.topics.find(item => item.id === req.params.id));
+  if (!topic) return res.status(404).json({ error: "Topic not found" });
+  const existing = topic.tabs.find(item => item.id === req.params.tabId);
+  if (!existing) return res.status(404).json({ error: "Lesson tab not found" });
+
+  topic.tabs = topic.tabs.filter(item => item.id !== req.params.tabId);
+  topic.updatedAt = new Date().toISOString();
+  writeDatabase(db);
+  res.json({ message: "Lesson tab deleted successfully.", topic: ensureTopicShape(topic), deletedTabId: req.params.tabId });
 });
 
 
