@@ -1,0 +1,223 @@
+{
+  "topics": [
+    {
+      "id": "debt",
+      "title": "Investment in Debt Securities",
+      "standard": "IFRS 9",
+      "summary": "Classification, recognition, measurement, amortization, and fair value treatment of debt securities.",
+      "discussion": "Debt securities are financial assets that represent a contractual right to receive cash, such as bonds. Under IFRS 9, debt securities may be classified depending on the entity's business model and the contractual cash flow characteristics of the instrument. Common classifications include amortized cost, fair value through other comprehensive income, and fair value through profit or loss.",
+      "formula": "Amortized Cost = Initial Carrying Amount + Interest Income - Cash Received ± Amortization",
+      "computation": "Example: A bond is acquired for ₱950,000 with a face value of ₱1,000,000. If the effective interest method is used, the discount is amortized over the life of the bond and increases the carrying amount until maturity.",
+      "tabs": []
+    },
+    {
+      "id": "inventory",
+      "title": "Inventories",
+      "standard": "PAS 2",
+      "summary": "Recognition, measurement, inventory cost, net realizable value, and cost formulas.",
+      "discussion": "Inventories are assets held for sale in the ordinary course of business, in the process of production for sale, or in the form of materials or supplies to be consumed in production. Under PAS 2, inventories are measured at the lower of cost and net realizable value.",
+      "formula": "Inventory Value = Lower of Cost and Net Realizable Value",
+      "computation": "Example: If inventory cost is ₱120,000 and net realizable value is ₱100,000, the inventory should be reported at ₱100,000. A write-down of ₱20,000 is recognized as expense.",
+      "tabs": []
+    },
+    {
+      "id": "ppe",
+      "title": "Property, Plant and Equipment",
+      "standard": "PAS 16",
+      "summary": "Recognition, initial cost, depreciation, revaluation, impairment, and disposal.",
+      "discussion": "Property, plant and equipment are tangible assets held for use in production, supply of goods or services, rental to others, or administrative purposes and are expected to be used for more than one period. Under PAS 16, an item of PPE is recognized when future economic benefits are probable and the cost can be measured reliably.",
+      "formula": "Depreciation = (Cost - Residual Value) ÷ Useful Life",
+      "computation": "Example: Equipment costs ₱500,000, has a residual value of ₱50,000, and useful life of 5 years. Annual depreciation is (₱500,000 - ₱50,000) ÷ 5 = ₱90,000.",
+      "tabs": []
+    }
+  ],
+  "quizBank": [
+    {
+      "id": "seed-q-1",
+      "reviewStatus": "approved",
+      "adminNotes": "",
+      "topic": "inventory",
+      "type": "theory",
+      "difficulty": "easy",
+      "question": "Under PAS 2, inventories are measured at:",
+      "choices": [
+        "Cost only",
+        "Net realizable value only",
+        "Lower of cost and NRV",
+        "Fair value"
+      ],
+      "answer": "Lower of cost and NRV",
+      "explanation": "PAS 2 requires inventories to be measured at the lower of cost and net realizable value.",
+      "reviewedBy": "admin@example.com",
+      "reviewedAt": "2026-06-07T14:05:24.563Z",
+      "updatedAt": "2026-06-07T14:05:24.563Z"
+    },
+    {
+      "id": "seed-q-2",
+      "reviewStatus": "approved",
+      "adminNotes": "",
+      "topic": "inventory",
+      "type": "problem",
+      "difficulty": "medium",
+      "question": "ABC Company has inventory cost of {cost} and net realizable value of {nrv}. What amount should be reported as inventory?",
+      "choices": [],
+      "answerFormula": "lowerCostNRV",
+      "explanation": "Compare cost {cost} and NRV {nrv}. The lower amount is {answer}. Therefore, inventory should be reported at {answer}.",
+      "variables": {
+        "cost": {
+          "min": 80000,
+          "max": 250000,
+          "step": 10000,
+          "format": "money"
+        },
+        "nrv": {
+          "min": 60000,
+          "max": 260000,
+          "step": 10000,
+          "format": "money"
+        }
+      },
+      "solutionTemplate": "Compare cost {cost} and NRV {nrv}. The lower amount is {answer}. Therefore, inventory should be reported at {answer}."
+    },
+    {
+      "id": "seed-q-2b",
+      "reviewStatus": "approved",
+      "adminNotes": "",
+      "topic": "inventory",
+      "type": "problem",
+      "difficulty": "medium",
+      "question": "ABC Company has goods available for sale of {A} and ending inventory of {B}. What is the cost of goods sold?",
+      "choices": [],
+      "answerFormula": "custom",
+      "answerExpression": "A - B",
+      "explanation": "Cost of goods sold = goods available for sale {A} - ending inventory {B} = {answer}.",
+      "variables": {
+        "A": {
+          "min": 150000,
+          "max": 500000,
+          "step": 10000,
+          "format": "money"
+        },
+        "B": {
+          "min": 30000,
+          "max": 120000,
+          "step": 5000,
+          "format": "money"
+        }
+      },
+      "solutionTemplate": "Cost of goods sold = goods available for sale {A} - ending inventory {B} = {answer}."
+    },
+    {
+      "id": "seed-q-3",
+      "reviewStatus": "approved",
+      "adminNotes": "",
+      "topic": "ppe",
+      "type": "theory",
+      "difficulty": "easy",
+      "question": "Which standard generally applies to Property, Plant and Equipment?",
+      "choices": [
+        "PAS 2",
+        "PAS 16",
+        "IFRS 9",
+        "PAS 37"
+      ],
+      "answer": "PAS 16",
+      "explanation": "PAS 16 provides guidance on Property, Plant and Equipment."
+    },
+    {
+      "id": "seed-q-4",
+      "reviewStatus": "approved",
+      "adminNotes": "",
+      "topic": "ppe",
+      "type": "problem",
+      "difficulty": "medium",
+      "question": "Equipment costs {cost}, residual value is {residual}, and useful life is {life} years. What is the annual straight-line depreciation?",
+      "choices": [],
+      "answerFormula": "depreciation",
+      "explanation": "Annual depreciation = ({cost} - {residual}) ÷ {life} years = {answer}.",
+      "variables": {
+        "cost": {
+          "min": 200000,
+          "max": 800000,
+          "step": 50000,
+          "format": "money"
+        },
+        "residual": {
+          "min": 10000,
+          "max": 80000,
+          "step": 5000,
+          "format": "money"
+        },
+        "life": {
+          "min": 3,
+          "max": 8,
+          "step": 1,
+          "format": "number"
+        }
+      },
+      "solutionTemplate": "Annual depreciation = ({cost} - {residual}) ÷ {life} years = {answer}."
+    },
+    {
+      "id": "seed-q-5",
+      "reviewStatus": "approved",
+      "adminNotes": "",
+      "topic": "debt",
+      "type": "theory",
+      "difficulty": "medium",
+      "question": "Debt securities measured at amortized cost use which method for interest income?",
+      "choices": [
+        "Straight-line method only",
+        "Effective interest method",
+        "Retail method",
+        "Gross profit method"
+      ],
+      "answer": "Effective interest method",
+      "explanation": "The effective interest method is used to compute interest income and amortization for debt securities measured at amortized cost."
+    }
+  ],
+  "scores": [],
+  "users": [
+    {
+      "id": "a3696ffd-6d81-47c2-b440-2877cd9edb88",
+      "email": "admin@example.com",
+      "passwordHash": "7a52b7f54597d1f9e50a4f32e1cecc91:7ba2147793c5b8640c40249258a0abe3bb0bf1c17d3257701442e0662d71a3bd9651650b15bc5c5e8cdc21ba22b1b75e58cefc83c7b5da67ba753b83ee22f424",
+      "role": "admin",
+      "createdAt": "2026-06-07T14:05:18.756Z",
+      "approvalStatus": "approved",
+      "approvedBy": "system",
+      "approvedAt": "2026-06-07T14:05:18.756Z"
+    },
+    {
+      "id": "239ae874-9c16-497e-b4c5-357d011bf31c",
+      "email": "student@example.com",
+      "passwordHash": "6c33d402dbde109ab34dd27d515a9f76:79dfaa11af7a844586100d2fcc38dddbcb188fbcafb50ee9f19d3420561180b0d1cf6b76725aaef8901d1257cff080065904da6c27a83fa5a0c619c837e4d96e",
+      "role": "student",
+      "trialStartDate": "2026-06-07T14:05:18.860Z",
+      "trialEndDate": "2026-07-07T14:05:18.860Z",
+      "trialDays": 30,
+      "createdAt": "2026-06-07T14:05:18.860Z",
+      "approvalStatus": "approved",
+      "approvedBy": "system",
+      "approvedAt": "2026-06-07T14:05:18.860Z",
+      "quizCredits": 0
+    }
+  ],
+  "professorProfile": {
+    "name": "Professor Name",
+    "position": "Professor / Instructor",
+    "subject": "Financial Accounting and Reporting",
+    "email": "professor@email.com",
+    "consultationHours": "Monday to Friday, 3:00 PM – 5:00 PM",
+    "philosophy": "To help students understand accounting concepts through clear discussions, practical computations, and interactive assessment.",
+    "photoLabel": "Photo",
+    "photoData": ""
+  },
+  "paymentRequests": [],
+  "paymentSettings": {
+    "pricePerQuestion": 5,
+    "qrImagePath": "assets/gcash-qr.jpg"
+  },
+  "siteSettings": {
+    "announcement": "Welcome to the Learning Hub. Check your quiz credits and continue your lessons regularly."
+  }
+}
