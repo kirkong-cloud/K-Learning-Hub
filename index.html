@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>K Learning Hub</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/png" href="k-learning-logo.png" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav-wrap">
+      <div class="logo"><img src="k-learning-logo.png" alt="K Learning Hub Logo" class="site-logo-img" /><span>K Learning Hub</span></div>
+      <button class="menu-btn" id="menuBtn">☰</button>
+      <nav id="navMenu">
+        <a href="#home" class="nav-link active">Home</a>
+        <div class="subject-nav-menu auth-only student-nav-only">
+          <button type="button" class="subject-nav-toggle">Subject ▾</button>
+          <div class="subject-nav-options">
+            <button type="button" onclick="navigateToSubject('FAR')">FAR</button>
+            <button type="button" onclick="navigateToSubject('AFAR')">AFAR</button>
+            <button type="button" onclick="navigateToSubject('MAS')">MAS</button>
+            <button type="button" onclick="navigateToSubject('TAX')">TAX</button>
+            <button type="button" onclick="navigateToSubject('RFBT')">RFBT</button>
+            <button type="button" onclick="navigateToSubject('AUD')">AUD</button>
+          </div>
+        </div>
+        <a href="#quizzer" class="nav-link auth-only student-nav-only">Quizzer</a>
+        <a href="#quiz-history" class="nav-link auth-only student-nav-only">Quiz History</a>
+        <a href="#about" class="nav-link auth-only student-nav-only">About</a>
+        <a href="#admin" class="nav-link auth-only admin-nav-only">Admin Menu ▾</a>
+        <button class="logout-btn auth-only admin-nav-only" onclick="goToAdminStudentView()">Student View</button>
+        <a href="#login" class="nav-link guest-only">Login</a>
+        <button class="logout-btn auth-only" onclick="logoutUser()">Logout</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section id="home" class="page active-page hero">
+      <div class="container hero-grid">
+        <div>
+          <img src="k-learning-logo.png" alt="K Learning Hub Logo" class="hero-logo-img" />
+          <p class="eyebrow">FAR • AFAR • MAS • TAX • RFBT • AUD</p>
+          <h1 id="homeWelcomeTitle">Welcome, Students!</h1>
+          <p class="hero-text">One professional CPA Review platform with subjects, lessons, quizzes, and performance tracking.</p>
+          <div class="hero-actions">
+            <a href="#login" class="btn primary nav-link guest-only guest-home-action">Login to Start</a>
+            <a href="#student" class="btn primary nav-link auth-only student-only student-home-action">Go to Dashboard</a>
+            <a href="#quizzer" class="btn secondary nav-link auth-only student-only student-home-action">Take a Quiz</a>
+            <a href="#admin" class="btn primary nav-link auth-only admin-only admin-home-action">Go to Admin Command Center</a>
+          </div>
+        </div>
+        <div class="hero-card">
+          <h3>What you can do here</h3>
+          <ul>
+            <li>Read topic discussions</li>
+            <li>Practice computations</li>
+            <li>Generate quizzes</li>
+            <li>Review answers with explanations</li>
+            <li>Track your quiz performance</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+      <div id="studentHomePanel" class="student-home-panel auth-only student-only">
+        <div class="student-home-header panel wide-panel">
+          <div>
+            <p class="eyebrow">My Learning Dashboard</p>
+            <h2 id="studentHomeGreeting">Hi, Student!</h2>
+            <p id="studentHomeSubtext">Track your access, continue studying, and review your latest quiz results.</p>
+          </div>
+          <div class="home-status-cards">
+            <div class="mini-status-card"><span>Trial Status</span><strong id="homeTrialStatus">Checking...</strong></div>
+            <div class="mini-status-card"><span>Days Left</span><strong id="homeDaysLeft">0</strong></div>
+            <div class="mini-status-card"><span>Quiz Credits</span><strong id="homeQuizCredits">0</strong></div>
+          </div>
+        </div>
+
+        <div class="quick-actions-grid compact-actions">
+          <button class="btn primary" onclick="continueLastLesson()">Continue Learning</button>
+          <button class="btn primary" onclick="goToStudentSection('quizzer')">Take Quiz</button>
+          <button class="btn secondary" onclick="goToStudentSection('quiz-history')">View Quiz History</button>
+        </div>
+
+        <div class="student-home-grid">
+          <div class="panel">
+            <h3>Continue Where You Left Off</h3>
+            <div id="continueLearningBox" class="home-info-box">No lesson viewed yet.</div>
+          </div>
+          <div class="panel">
+            <h3>Performance Summary</h3>
+            <div id="homePerformanceSummary" class="home-info-box">No quiz performance yet.</div>
+          </div>
+        </div>
+
+        <div class="student-home-grid">
+          <div class="panel">
+            <h3>Recent Quiz Results</h3>
+            <div id="homeRecentQuizResults" class="home-info-box">No recent quiz results yet.</div>
+          </div>
+          <div class="panel">
+            <h3>Recommended Review</h3>
+            <div id="homeRecommendedReview" class="home-info-box">Take a quiz to receive a recommendation.</div>
+          </div>
+        </div>
+
+        <div class="panel wide-panel">
+          <h3>Topic Progress</h3>
+          <div id="homeTopicProgressGrid" class="topic-progress-grid"></div>
+        </div>
+
+        <div class="panel wide-panel announcement-card">
+          <h3>Professor Announcement</h3>
+          <div id="homeAnnouncementBox">No announcement yet.</div>
+        </div>
+      </div>
+
+
+    <section id="login" class="page">
+      <div class="container auth-container">
+        <div class="section-title">
+          <p class="eyebrow">Secure Access</p>
+          <h2>Login</h2>
+          <p>Use your email address and a strong 8-character password.</p>
+        </div>
+
+        <div class="auth-grid">
+          <form id="loginForm" class="panel">
+            <h3>Existing Account</h3>
+            <label>Email Address</label>
+            <input type="email" id="loginEmail" required placeholder="student@example.com" />
+            <label>Password</label>
+            <input type="password" id="loginPassword" minlength="8" required placeholder="Minimum 8 characters" />
+            <button class="btn primary" type="submit">Login</button>
+            <p id="loginMessage" class="form-message"></p>
+</form>
+
+          <form id="registerForm" class="panel">
+            <h3>Create Account</h3>
+            <label>Student Full Name</label>
+            <input type="text" id="registerName" required placeholder="Juan Dela Cruz" />
+            <label>Contact Number</label>
+            <input type="tel" id="registerContact" required placeholder="09XXXXXXXXX" />
+            <label>Email Address</label>
+            <input type="email" id="registerEmail" required placeholder="your@email.com" />
+            <label>Strong Password</label>
+            <input type="password" id="registerPassword" minlength="8" required placeholder="At least 8 characters, uppercase, lowercase, number" />
+            <button class="btn secondary" type="button" id="sendOtpBtn">Send Email OTP</button>
+            <div id="otpBox" class="otp-box hidden-by-role">
+              <label>Enter OTP sent to email</label>
+              <input type="text" id="registerOtp" maxlength="6" placeholder="6-digit OTP" />
+              <small id="otpPreviewText" class="muted-text"></small>
+            </div>
+            <p class="notice">New registrations are created as <strong>Student</strong> accounts. Email OTP verification is required first, then admin approval is required before login.</p>
+            <button class="btn secondary" type="submit">Verify OTP and Submit Registration</button>
+            <p id="registerMessage" class="form-message"></p>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section id="student" class="page">
+      <div class="container">
+        <div class="section-title">
+          <p class="eyebrow">Student</p>
+          <h2 id="studentDashboardTitle">Student Dashboard</h2>
+          <p id="studentDashboardSubtitle">Access lessons, take quizzes, and review your learning progress.</p>
+        </div>
+        <div id="trialBanner" class="notice success">Your access is active.</div>
+        <div class="cards-grid">
+          <div class="card"><h3>Continue Learning</h3><p>Open your subjects and continue your lesson topics.</p><button class="btn primary" onclick="showPage('topics')">Open Subjects</button></div>
+          <div class="card"><h3>Take Quiz</h3><p>Start a quick quiz or customize your own quiz. Credits are checked before generation.</p><button class="btn primary" onclick="goToStudentSection('quizzer')">Take Quiz</button></div>
+          <div class="card"><h3>Quiz History</h3><p>Review your previous quiz results, answers, and explanations.</p><button class="btn secondary" onclick="goToStudentSection('quiz-history')">View Quiz History</button></div>
+          <div class="card"><h3>My Access</h3><p id="currentRoleText">Logged in as student.</p><p id="trialStatusText">Trial Status: 30 days remaining.</p><p id="quizCreditText">Quiz Credits: 0 item(s)</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="topics" class="page">
+      <div class="container">
+        <div class="section-title">
+          <p class="eyebrow">Topics</p>
+          <h2>Choose a Subject and Topic</h2>
+          <p>Select a subject to view its topics. The background color changes based on the selected subject.</p>
+          <div class="subject-filter-bar">
+            <label for="subjectFilter">Subject</label>
+            <select id="subjectFilter" onchange="handleSubjectFilterChange()">
+              <option value="all">All Subjects</option>
+              <option value="FAR">FAR</option>
+              <option value="AFAR">AFAR</option>
+              <option value="MAS">MAS</option>
+              <option value="TAX">TAX</option>
+              <option value="RFBT">RFBT</option>
+              <option value="AUD">AUD</option>
+            </select>
+          </div>
+        </div>
+        <div id="topicsGrid" class="cards-grid"></div>
+      </div>
+    </section>
+
+    <section id="topic-detail" class="page">
+      <div class="container">
+        <button class="btn ghost" onclick="showPage('topics')">← Back to Topics</button>
+        <div id="topicContent" class="topic-layout"></div>
+      </div>
+    </section>
+
+    <section id="quizzer" class="page">
+      <div class="container narrow">
+        <div class="section-title">
+          <p class="eyebrow">Quizzer</p>
+          <h2>Create Your Quiz</h2>
+          <p>Choose a quick quiz or customize your quiz. Each generated quiz item uses one approved quiz credit.</p>
+        </div>
+
+        <div class="panel quick-quiz-panel">
+          <h3>Start Faster</h3>
+          <p>Use Quick Quiz for a simple 5-item mixed practice, or use Custom Quiz below for full control.</p>
+          <div class="quick-actions-grid compact-actions">
+            <button class="btn primary" type="button" onclick="startQuickQuiz()">Quick 5-Item Quiz</button>
+            <button class="btn secondary" type="button" onclick="document.getElementById('quizForm').scrollIntoView({behavior:'smooth', block:'start'})">Customize Quiz</button>
+          </div>
+        </div>
+
+        <form id="quizForm" class="panel">
+          <h3>Custom Quiz Setup</h3>
+          <p class="muted-text">Step 1: choose topics. Step 2: set question types. Step 3: set difficulty. Step 4: generate quiz.</p>
+          <label>Topics <small>(check one or more topics)</small></label>
+          <div class="multi-select-box" id="quizTopicDropdown">
+            <button type="button" class="multi-select-toggle" onclick="toggleQuizTopicDropdown()">
+              <span id="quizTopicSummary">All Topics</span>
+              <span>▾</span>
+            </button>
+            <div class="multi-select-menu hidden-panel" id="quizTopicMenu">
+              <label><input type="checkbox" name="quizTopicChoice" value="all" checked /> All Topics</label>
+            </div>
+          </div>
+
+          <div class="quiz-builder-grid">
+            <div>
+              <label>Theory Items</label>
+              <input type="number" id="theoryItemCount" min="0" max="100" value="3" oninput="updateAdvancedQuizTotals()" />
+            </div>
+            <div>
+              <label>Problem-Solving Items</label>
+              <input type="number" id="problemItemCount" min="0" max="100" value="2" oninput="updateAdvancedQuizTotals()" />
+            </div>
+          </div>
+
+          <label>Problem-Solving Format</label>
+          <select id="problemSolvingFormat">
+            <option value="mixed">Mixed: Multiple Choice and Open-Ended</option>
+            <option value="multiple-choice">Multiple Choice Only</option>
+            <option value="open-ended">Open-Ended Only</option>
+          </select>
+
+          <label>Difficulty Composition <small>(exact number per level)</small></label>
+          <div class="quiz-builder-grid difficulty-count-grid">
+            <div>
+              <label>Easy Items</label>
+              <input type="number" id="easyItemCount" min="0" max="100" value="2" oninput="updateAdvancedQuizTotals()" />
+            </div>
+            <div>
+              <label>Moderate Items</label>
+              <input type="number" id="mediumItemCount" min="0" max="100" value="2" oninput="updateAdvancedQuizTotals()" />
+            </div>
+            <div>
+              <label>Difficult Items</label>
+              <input type="number" id="hardItemCount" min="0" max="100" value="1" oninput="updateAdvancedQuizTotals()" />
+            </div>
+          </div>
+
+          <label>Quiz Mode</label>
+          <select id="quizMode">
+            <option value="exam">Exam Mode - explanations show after final submission</option>
+            <option value="practice">Practice Mode - explanation appears after answering each item</option>
+          </select>
+
+          <div class="quiz-total-box">
+            <p><strong>Total Items:</strong> <span id="advancedTotalItems">5</span></p>
+            <p><strong>Required Quiz Credits:</strong> <span id="advancedRequiredCredits">5</span></p>
+            <p class="muted-text">Theory + Problem-Solving total must equal Easy + Moderate + Difficult total.</p>
+          </div>
+
+
+          <div class="timer-row">
+            <label><input type="checkbox" id="enableTimer" /> Enable Timer</label>
+            <input type="number" id="timerMinutes" min="1" value="10" />
+            <span>minutes</span>
+          </div>
+
+          <p id="quizAccessMessage" class="notice"></p>
+          <button class="btn primary" type="submit">Generate Quiz</button>
+        </form>
+
+        <div class="panel payment-entry-panel">
+          <h3>Need Quiz Credits?</h3>
+          <p>If your credits are not enough, submit a GCash payment request here. Credits are added after admin approval.</p>
+          <button class="btn secondary" onclick="togglePaymentPanel()">Open Payment Request</button>
+        </div>
+
+        <div id="paymentPanel" class="panel payment-panel hidden-panel">
+          <h3>Payment Required Before Quiz Generation</h3>
+          <p class="muted-text">Quiz credits cost <strong>₱2 per question</strong>. Scan the QR code, send payment, then submit your GCash reference number or upload a receipt screenshot. The admin must approve your payment before credits are added.</p>
+          <div class="payment-grid">
+            <div>
+              <input type="hidden" id="paymentPlanType" value="quiz_credits" />
+              <div id="quizCreditPaymentFields">
+                <label>Number of Questions / Items</label>
+                <input type="number" id="paymentItemCount" min="1" value="10" oninput="updatePaymentTotal()" />
+              </div>
+              <p id="paymentTotalText" class="payment-total">Total: ₱20</p>
+              <label>GCash Reference Number</label>
+              <input id="paymentReference" placeholder="Example: GCash reference number" />
+              <label>Or Upload Receipt Screenshot</label>
+              <input type="file" id="paymentReceipt" accept="image/jpeg,image/jpg,image/png" />
+              <small class="muted-text">Submit at least one proof: reference number or receipt screenshot.</small>
+              <button class="btn primary" onclick="submitPaymentRequest()">Submit Payment for Admin Approval</button>
+              <p id="paymentRequestMessage" class="form-message"></p>
+            </div>
+            <div class="qr-card">
+              <img class="gcash-qr-img" src="assets/gcash-qr.jpg" onerror="this.onerror=null; this.src='gcash-qr.jpg';" alt="GCash QR code for quiz payment" />
+              <small>Scan this GCash QR code, then enter the reference number or upload your receipt screenshot.</small>
+            </div>
+          </div>
+          <hr />
+          <h4>My Payment Requests</h4>
+          <div id="myPaymentRequests"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="quiz-taking" class="page">
+      <div class="container narrow">
+        <div class="quiz-topbar">
+          <h2 id="quizTitle">Quiz</h2>
+          <div id="timerDisplay" class="timer-display"></div>
+        </div>
+        <div id="quizQuestionBox" class="panel"></div>
+      </div>
+    </section>
+
+    <section id="quiz-result" class="page">
+      <div class="container narrow">
+        <div id="resultBox" class="panel result-box"></div>
+      </div>
+    </section>
+
+    <section id="quiz-history" class="page">
+      <div class="container narrow">
+        <button class="btn ghost" onclick="showPage('student')">← Back to Dashboard</button>
+        <div class="section-title">
+          <p class="eyebrow">Quiz History</p>
+          <h2>My Quizzer History</h2>
+          <p>Review your previous quiz scores, answers, correct answers, and explanations.</p>
+        </div>
+        <div class="panel">
+          <button class="btn secondary" onclick="renderQuizHistory()">Refresh History</button>
+          <div id="quizHistoryBox" class="quiz-history-box"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="about" class="page">
+      <div class="container narrow">
+        <div class="section-title">
+          <p class="eyebrow">About</p>
+          <h2>About the Professor</h2>
+        </div>
+        <div class="profile-card">
+          <div class="profile-photo" id="professorPhotoPreview">Photo</div>
+          <div>
+            <h3 id="professorNameText">Professor Name</h3>
+            <p><strong>Position:</strong> <span id="professorPositionText">Professor / Instructor</span></p>
+            <p><strong>Subject:</strong> <span id="professorSubjectText">Financial Accounting and Reporting</span></p>
+            <p><strong>Teaching Philosophy:</strong> <span id="professorPhilosophyText">To help students understand accounting concepts through clear discussions, practical computations, and interactive assessment.</span></p>
+            <p><strong>Email:</strong> <span id="professorEmailText">professor@email.com</span></p>
+            <p><strong>Consultation Hours:</strong> <span id="professorHoursText">Monday to Friday, 3:00 PM – 5:00 PM</span></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="admin" class="page">
+      <div class="container">
+        <div class="section-title">
+          <p class="eyebrow">Admin</p>
+          <h2>Admin Command Center</h2>
+          <p>Use this simplified admin workspace to see what needs action, manage content, control quizzes, monitor students, review reports, and update settings.</p>
+        </div>
+
+        <div class="admin-toolbar panel">
+          <label for="adminFeatureSelect"><strong>Admin Menu</strong></label>
+          <select id="adminFeatureSelect" onchange="showAdminSection(this.value)">
+            <option value="admin-overview">Dashboard Overview</option>
+            <option value="admin-content-management">Content Management</option>
+            <option value="admin-quiz-bank">Quiz &amp; Question Bank</option>
+            <option value="admin-account-access">Student Management</option>
+            <option value="admin-reports-records">Reports</option>
+            <option value="admin-site-settings">Settings</option>
+          </select>
+        </div>
+
+        <div id="admin-overview" class="admin-section-panel active-admin-section">
+          <div class="admin-command-center">
+            <div class="panel wide-panel admin-welcome-panel">
+              <div>
+                <p class="eyebrow">Command Center</p>
+                <h3>Welcome, Professor/Admin</h3>
+                <p class="muted-text">Monitor important tasks, student access, quiz bank status, payments, and recent activity from one clean dashboard.</p>
+              </div>
+              <button class="btn secondary" onclick="renderAdminOverview()">Refresh Dashboard</button>
+            </div>
+
+            <div class="admin-summary-grid" id="adminSummaryCards">
+              <div class="summary-card"><span>Total Students</span><strong>0</strong></div>
+              <div class="summary-card"><span>Pending Registrations</span><strong>0</strong></div>
+              <div class="summary-card"><span>Pending Payments</span><strong>0</strong></div>
+              <div class="summary-card"><span>Pending Questions</span><strong>0</strong></div>
+              <div class="summary-card"><span>Total Questions</span><strong>0</strong></div>
+              <div class="summary-card"><span>Quiz Attempts</span><strong>0</strong></div>
+            </div>
+
+            <div class="admin-dashboard-two-col">
+              <div class="panel">
+                <h3>Needs Action</h3>
+                <div id="adminNeedsAction" class="needs-action-list">
+                  <p class="muted-text">No pending action yet.</p>
+                </div>
+              </div>
+
+              <div class="panel">
+                <h3>Quick Admin Actions</h3>
+                <div class="quick-action-grid">
+                  <button class="btn primary" onclick="showAdminSection('admin-topics')">Add Topic</button>
+                  <button class="btn primary" onclick="showAdminSection('admin-create-quizzer')">Create Question</button>
+                  <button class="btn secondary" onclick="showAdminSection('admin-review-quizzer')">Review Questions</button>
+                  <button class="btn secondary" onclick="showAdminSection('admin-generate-pdf-quiz')">Generate Quiz PDF</button>
+                  <button class="btn secondary" onclick="showAdminSection('admin-account-access')">Manage Students</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="admin-dashboard-two-col">
+              <div class="panel">
+                <h3>Student Performance Snapshot</h3>
+                <div id="adminPerformanceSnapshot" class="dashboard-mini-list">
+                  <p class="muted-text">Performance records will appear after students take quizzes.</p>
+                </div>
+              </div>
+
+              <div class="panel">
+                <h3>Payment &amp; Credit Monitoring</h3>
+                <div id="adminPaymentCreditSnapshot" class="dashboard-mini-list">
+                  <p class="muted-text">Payment and credit records will appear here.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel wide-panel">
+              <h3>Question Bank Health</h3>
+              <div id="adminQuestionBankHealth" class="responsive-table-wrap">
+                <p class="muted-text">Question bank status will appear here.</p>
+              </div>
+            </div>
+
+            <div class="admin-dashboard-two-col">
+              <div class="panel">
+                <h3>Recent Activity</h3>
+                <div id="adminRecentActivity" class="activity-list">
+                  <p class="muted-text">Recent activity will appear here.</p>
+                </div>
+              </div>
+
+              <div class="panel">
+                <h3>Current Student Announcement</h3>
+                <div id="adminAnnouncementPreview" class="announcement-preview-box"></div>
+                <button class="btn secondary" onclick="showAdminSection('admin-site-settings')">Edit Announcement</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="admin-content-management" class="admin-section-panel">
+          <div class="panel wide-panel">
+            <h3>Content Management</h3>
+            <p class="muted-text">Manage all learning materials in one clean section. Use the buttons below to open the specific tool you need.</p>
+            <div class="admin-cards-grid compact-admin-grid">
+              <button class="admin-menu-card" onclick="showAdminSection('admin-topics')"><strong>Topics</strong><span>Add, edit, or delete topic titles and main discussion.</span></button>
+              <button class="admin-menu-card" onclick="showAdminSection('admin-lesson-tabs')"><strong>Lesson Menu Tabs</strong><span>Add, edit, or delete lesson tabs and insert table/accounting templates.</span></button>
+              <button class="admin-menu-card" onclick="showAdminSection('admin-student-view')"><strong>Student View Preview</strong><span>Preview topics, lessons, quizzer, and About page as students see them.</span></button>
+            </div>
+          </div>
+        </div>
+
+        <div id="admin-quiz-bank" class="admin-section-panel">
+          <div class="panel wide-panel">
+            <h3>Quiz &amp; Question Bank</h3>
+            <p class="muted-text">Create questions, review/approve them, manage the full repository, generate printable PDFs, and process quiz-payment requests.</p>
+            <div class="admin-cards-grid compact-admin-grid">
+              <button class="admin-menu-card" onclick="showAdminSection('admin-create-quizzer')"><strong>Create Question</strong><span>Add theory, problem-solving, table form, accounting format, and variable-based questions.</span></button>
+              <button class="admin-menu-card" onclick="showAdminSection('admin-review-quizzer')"><strong>Review Questions</strong><span>Approve, edit, mark for revision, or delete submitted quizzer questions.</span></button>
+              <button class="admin-menu-card" onclick="showAdminSection('admin-question-repository')"><strong>Question Repository</strong><span>Search, filter, duplicate, import, export, and maintain the full question bank.</span></button>
+              <button class="admin-menu-card" onclick="showAdminSection('admin-generate-pdf-quiz')"><strong>Generate Quiz PDF</strong><span>Create printable quizzes and answer keys from approved questions.</span></button>
+              <button class="admin-menu-card" onclick="showAdminSection('admin-payments')"><strong>Payment Requests</strong><span>Review GCash references/receipts and auto-add quiz credits after approval.</span></button>
+            </div>
+          </div>
+        </div>
+
+        <div id="admin-reports-records" class="admin-section-panel">
+          <div class="panel wide-panel">
+            <h3>Reports</h3>
+            <p class="muted-text">Use this section for monitoring and checking records, not for creating content.</p>
+            <div class="admin-cards-grid compact-admin-grid">
+              <button class="admin-menu-card" onclick="showAdminSection('admin-scores')"><strong>Student Scores</strong><span>View submitted quiz results and performance records.</span></button>
+              <button class="admin-menu-card" onclick="showAdminSection('admin-payments')"><strong>Payment Records</strong><span>Review pending and approved payment requests.</span></button>
+              <button class="admin-menu-card" onclick="showAdminSection('admin-question-repository')"><strong>Question Bank Report</strong><span>Check counts, status, filters, and export/import records.</span></button>
+            </div>
+          </div>
+        </div>
+
+        <div id="admin-topics" class="admin-section-panel">
+          <div class="admin-grid">
+            <div class="panel">
+              <h3>Edit Topic Discussion</h3>
+              <label>Choose Topic</label>
+              <select id="editTopicSelect"></select>
+              <label>Topic Title</label>
+              <input id="editTopicTitle" placeholder="Example: Inventories" />
+              <label>Main Discussion</label>
+              <textarea id="editDiscussion" rows="10" placeholder="Main introduction for the topic. Add detailed lessons, formulas, standards, and computations using Lesson Menu Tabs."></textarea>
+              <button class="btn primary" onclick="saveTopicEdits()">Save Topic Changes</button>
+              <button class="btn danger-btn" onclick="deleteTopic()">Delete Topic</button>
+            </div>
+
+            <div class="panel">
+              <h3>Add New Topic</h3>
+              <label>Topic Title</label>
+              <input id="newTopicTitle" placeholder="Example: Receivables" />
+              <label>Main Discussion</label>
+              <textarea id="newTopicDiscussion" rows="10" placeholder="Main introduction for the topic. Add detailed lessons, formulas, standards, and computations using Lesson Menu Tabs after creating the topic."></textarea>
+              <button class="btn primary" onclick="addTopic()">Add Topic</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="admin-lesson-tabs" class="admin-section-panel">
+          <div class="panel wide-panel">
+            <h3>Add Lesson Menu Tab</h3>
+            <p class="muted-text">Use this to add extra discussion tabs under a topic, such as Journal Entries, Examples, Common Mistakes, or Reviewer Notes.</p>
+            <label>Choose Topic</label>
+            <select id="lessonTabTopicSelect"></select>
+            <label>New Tab Title</label>
+            <input id="lessonTabTitle" placeholder="Example: Journal Entries" />
+            <label>Tab Discussion / Content</label>
+            <div class="template-toolbar">
+              <button type="button" class="btn ghost small-btn" onclick="insertTemplate('lessonTabContent', 'tAccount')">Insert Designed T-Account</button>
+              <button type="button" class="btn ghost small-btn" onclick="insertTemplate('lessonTabContent', 'accountingFormat')">Insert Designed Accounting Format</button>
+              <button type="button" class="btn ghost small-btn" onclick="insertTemplate('lessonTabContent', 'tableForm')">Insert Table Form</button>
+            </div>
+            <textarea id="lessonTabContent" rows="8" placeholder="Enter the discussion. Use the buttons above to insert a visual T-account or accounting format."></textarea>
+            <button class="btn primary" onclick="addLessonTab()">Add Lesson Tab</button>
+
+            <div id="lessonTabEditPanel" class="edit-panel hidden-panel">
+              <h4>Edit Additional Tab</h4>
+              <input type="hidden" id="editingLessonTabId" />
+              <label>Edit Tab Title</label>
+              <input id="editLessonTabTitle" placeholder="Example: Journal Entries" />
+              <label>Edit Tab Discussion / Content</label>
+              <div class="template-toolbar">
+                <button type="button" class="btn ghost small-btn" onclick="insertTemplate('editLessonTabContent', 'tAccount')">Insert Designed T-Account</button>
+                <button type="button" class="btn ghost small-btn" onclick="insertTemplate('editLessonTabContent', 'accountingFormat')">Insert Designed Accounting Format</button>
+                <button type="button" class="btn ghost small-btn" onclick="insertTemplate('editLessonTabContent', 'tableForm')">Insert Table Form</button>
+              </div>
+              <textarea id="editLessonTabContent" rows="8" placeholder="Edit the discussion or template content."></textarea>
+              <div class="button-row">
+                <button class="btn primary" onclick="saveLessonTabEdit()">Save Edited Tab</button>
+                <button class="btn ghost" onclick="cancelLessonTabEdit()">Cancel</button>
+              </div>
+            </div>
+
+            <hr />
+            <h4>Existing Additional Tabs</h4>
+            <div id="lessonTabsList"></div>
+          </div>
+        </div>
+
+        <div id="admin-create-quizzer" class="admin-section-panel">
+          <div class="panel wide-panel">
+            <h3>Create Quizzer Question</h3>
+            <label>Topic</label>
+            <select id="newQuestionTopic"></select>
+            <label>Type</label>
+            <select id="newQuestionType">
+              <option value="theory">Theory</option>
+              <option value="problem">Problem Solving</option>
+            </select>
+            <label>Difficulty</label>
+            <select id="newQuestionDifficulty">
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+            </select>
+            <label>Question</label>
+            <div class="button-row compact-row">
+              <button type="button" class="btn ghost small-btn" onclick="insertTemplate('newQuestionText', 'tableForm')">Insert Table Form</button>
+              <button type="button" class="btn ghost small-btn" onclick="insertTemplate('newQuestionText', 'accountingFormat')">Insert Accounting Format</button>
+            </div>
+            <textarea id="newQuestionText" rows="5" placeholder="Example: Goods available is {A} and ending inventory is {B}. What is COGS?"></textarea>
+            <label>Choices, separated by |</label>
+            <input id="newQuestionChoices" placeholder="A choice | B choice | C choice | D choice. Leave blank for no choices." />
+            <label>Correct Answer</label>
+            <input id="newQuestionAnswer" placeholder="For theory questions only. Automated formula questions do not need this." />
+            <label>Automated Formula for Problem Solving</label>
+            <select id="newQuestionFormula">
+              <option value="">None / Manual Answer</option>
+              <option value="lowerCostNRV">Inventory: Lower of Cost and NRV</option>
+              <option value="depreciation">PPE: Straight-line Depreciation</option>
+              <option value="debtCarryingAmount">Debt Securities: Carrying Amount</option>
+              <option value="custom">Custom Formula: A to Z</option>
+            </select>
+            <label>Custom Answer Formula Expression</label>
+            <input id="newQuestionExpression" placeholder="Example: A - B, A + B - C, (A - B) / C, MIN(A, B), MAX(A, B)" />
+            <label>Variable Settings JSON</label>
+            <textarea id="newQuestionVariables" rows="5" placeholder='Example: {"A":{"min":100000,"max":500000,"step":10000,"format":"money"},"B":{"min":10000,"max":200000,"step":5000,"format":"money"},"Z":{"min":1,"max":10,"step":1,"format":"number"}}'></textarea>
+            <label>Explanation / Solution Template</label>
+            <div class="button-row compact-row">
+              <button type="button" class="btn ghost small-btn" onclick="insertTemplate('newQuestionExplanation', 'tableForm')">Insert Table Form</button>
+              <button type="button" class="btn ghost small-btn" onclick="insertTemplate('newQuestionExplanation', 'accountingFormat')">Insert Accounting Format</button>
+            </div>
+            <textarea id="newQuestionExplanation" rows="5" placeholder="Manual explanation, or use placeholders such as {A}, {B}, {C}, ... {Z}, and {answer}."></textarea>
+            <button class="btn primary" onclick="addQuizQuestion()">Save Question</button>
+          </div>
+        </div>
+
+        
+
+        <div id="admin-question-repository" class="admin-section-panel">
+          <div class="panel wide-panel">
+            <h3>Question Repository</h3>
+            <p class="muted-text">This is the complete quiz bank. Use it to search, filter, duplicate, export, import, edit, delete, and monitor all questions added by the admin.</p>
+
+            <div class="repository-toolbar">
+              <div>
+                <label>Search Question / Answer / Explanation</label>
+                <input id="repoSearchInput" placeholder="Search keyword..." oninput="renderQuestionRepository()" />
+              </div>
+              <div>
+                <label>Topic</label>
+                <select id="repoTopicFilter" onchange="renderQuestionRepository()"><option value="all">All Topics</option></select>
+              </div>
+              <div>
+                <label>Type</label>
+                <select id="repoTypeFilter" onchange="renderQuestionRepository()">
+                  <option value="all">All Types</option>
+                  <option value="theory">Theory</option>
+                  <option value="problem">Problem Solving</option>
+                </select>
+              </div>
+              <div>
+                <label>Difficulty</label>
+                <select id="repoDifficultyFilter" onchange="renderQuestionRepository()">
+                  <option value="all">All Difficulty</option>
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </div>
+              <div>
+                <label>Status</label>
+                <select id="repoStatusFilter" onchange="renderQuestionRepository()">
+                  <option value="all">All Status</option>
+                  <option value="pending_review">Pending Review</option>
+                  <option value="approved">Approved</option>
+                  <option value="needs_revision">Needs Revision</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="button-row">
+              <button class="btn primary" type="button" onclick="loadQuestionRepository()">Refresh Repository</button>
+              <button class="btn secondary" type="button" onclick="exportQuestionRepository()">Export Question Bank JSON</button>
+              <label class="btn ghost upload-label" for="repoImportFile">Import Question Bank JSON</label>
+              <input id="repoImportFile" class="hidden-file-input" type="file" accept="application/json,.json" onchange="importQuestionRepository(event)" />
+            </div>
+
+            <div id="questionRepositorySummary" class="repository-summary"></div>
+            <div id="questionRepositoryList" class="repository-list"></div>
+          </div>
+        </div>
+
+        <div id="admin-generate-pdf-quiz" class="admin-section-panel">
+          <div class="panel wide-panel">
+            <h3>Generate Quiz and Convert to PDF</h3>
+            <p class="muted-text">Generate a printable quiz from approved questions. After previewing, click <strong>Convert / Save as PDF</strong>, then choose <strong>Save as PDF</strong> in the print dialog.</p>
+
+            <div class="admin-pdf-quiz-grid">
+              <div>
+                <label>Quiz Title</label>
+                <input id="adminPdfQuizTitle" value="FAR Practice Quiz" placeholder="Example: FAR Practice Quiz" />
+              </div>
+              <div>
+                <label>Number of Items</label>
+                <input id="adminPdfItemCount" type="number" min="1" value="10" />
+              </div>
+              <div>
+                <label>Question Type</label>
+                <select id="adminPdfQuizType">
+                  <option value="mixed">Mixed</option>
+                  <option value="theory">Theory</option>
+                  <option value="problem">Problem Solving</option>
+                </select>
+              </div>
+              <div>
+                <label>Include in PDF</label>
+                <select id="adminPdfIncludeAnswers">
+                  <option value="questions-only">Questions Only</option>
+                  <option value="with-answer-key">Questions + Answer Key</option>
+                  <option value="answer-key-only">Answer Key Only</option>
+                </select>
+              </div>
+            </div>
+
+            <h4>Topics</h4>
+            <div id="adminPdfTopicChecks" class="compact-check-grid"></div>
+
+            <h4>Difficulty</h4>
+            <div id="adminPdfDifficultyChecks" class="compact-check-grid">
+              <label><input type="checkbox" name="adminPdfDifficulty" value="all" checked> All Difficulty Levels</label>
+              <label><input type="checkbox" name="adminPdfDifficulty" value="easy"> Easy</label>
+              <label><input type="checkbox" name="adminPdfDifficulty" value="medium"> Medium</label>
+              <label><input type="checkbox" name="adminPdfDifficulty" value="hard"> Hard</label>
+            </div>
+
+            <div class="button-row">
+              <button class="btn primary" onclick="generateAdminPdfQuiz()">Generate Quiz Preview</button>
+              <button class="btn secondary" onclick="printAdminGeneratedQuiz()">Convert / Save as PDF</button>
+              <button class="btn ghost" onclick="clearAdminGeneratedQuiz()">Clear Preview</button>
+            </div>
+
+            <div id="adminPdfQuizMessage" class="form-message"></div>
+            <div id="adminGeneratedQuizPreview" class="printable-quiz-preview"></div>
+          </div>
+        </div>
+
+        <div id="admin-review-quizzer" class="admin-section-panel">
+          <div class="panel wide-panel">
+            <h3>Review Quizzer Questions</h3>
+            <p>Questions are organized per topic. Check the answer and explanation before approving them for students.</p>
+            <div class="review-filters">
+              <div>
+                <label>Topic</label>
+                <select id="reviewTopicFilter"><option value="all">All Topics</option></select>
+              </div>
+              <div>
+                <label>Type</label>
+                <select id="reviewTypeFilter">
+                  <option value="all">All Types</option>
+                  <option value="theory">Theory</option>
+                  <option value="problem">Problem Solving</option>
+                </select>
+              </div>
+              <div>
+                <label>Status</label>
+                <select id="reviewStatusFilter">
+                  <option value="all">All Status</option>
+                  <option value="pending_review">Pending Review</option>
+                  <option value="approved">Approved</option>
+                  <option value="needs_revision">Needs Revision</option>
+                </select>
+              </div>
+            </div>
+            <p id="quizReviewSummary" class="muted-text"></p>
+            <div id="adminQuizList" class="quiz-review-list"></div>
+          </div>
+        </div>
+
+
+        <div id="admin-generate-pdf" class="admin-section-panel">
+          <div class="panel wide-panel">
+            <h3>Generate Quiz and Convert to PDF</h3>
+            <p class="muted-text">Create a quiz from approved questions, preview it, then use the PDF button to save it as a PDF file. This tool is for admin use and does not consume student quiz credits.</p>
+
+            <div class="admin-grid">
+              <div>
+                <label>Quiz Title</label>
+                <input id="adminPdfQuizTitle" value="K Learning Hub Quiz" />
+
+                <label>Topics <small>(check one or more topics)</small></label>
+                <div id="adminPdfTopicChoices" class="checkbox-grid compact-checkbox-grid"></div>
+
+                <label>Question Type</label>
+                <select id="adminPdfQuizType">
+                  <option value="mixed">Mixed</option>
+                  <option value="theory">Theory</option>
+                  <option value="problem">Problem Solving</option>
+                </select>
+
+                <label>Difficulty <small>(you may choose two or more)</small></label>
+                <div id="adminPdfDifficultyChoices" class="checkbox-grid compact-checkbox-grid">
+                  <label><input type="checkbox" name="adminPdfDifficulty" value="all" checked /> All Difficulty Levels</label>
+                  <label><input type="checkbox" name="adminPdfDifficulty" value="easy" /> Easy</label>
+                  <label><input type="checkbox" name="adminPdfDifficulty" value="medium" /> Medium</label>
+                  <label><input type="checkbox" name="adminPdfDifficulty" value="hard" /> Hard</label>
+                </div>
+
+                <label>Number of Items</label>
+                <input type="number" id="adminPdfItemCount" min="1" max="100" value="20" />
+
+                <label class="inline-check"><input type="checkbox" id="adminPdfIncludeAnswerKey" checked /> Include answer key and explanations</label>
+
+                <div class="button-row">
+                  <button class="btn primary" type="button" onclick="generateAdminQuizPdfPreview()">Generate Quiz Preview</button>
+                  <button class="btn secondary" type="button" onclick="printAdminQuizPdf()">Download / Save as PDF</button>
+                </div>
+                <p id="adminPdfMessage" class="form-message"></p>
+              </div>
+
+              <div>
+                <div class="pdf-tip-box">
+                  <h4>PDF Tip</h4>
+                  <p>After clicking <strong>Download / Save as PDF</strong>, choose <strong>Save as PDF</strong> in the print dialog.</p>
+                  <p>This works on GitHub Pages because it uses the browser's built-in PDF printing.</p>
+                </div>
+              </div>
+            </div>
+
+            <hr />
+            <h4>Quiz PDF Preview</h4>
+            <div id="adminPdfPreview" class="quiz-pdf-preview">
+              <p class="muted-text">Generate a quiz preview first.</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="admin-account-access" class="admin-section-panel">
+          <div class="panel wide-panel">
+            <h3>Student Management</h3>
+            <p class="muted-text">Search and manage student accounts in a clean table. Use <strong>Manage</strong> to approve/reject students, add or reduce days, and add or reduce quiz credits.</p>
+            <div class="admin-filter-bar">
+              <div>
+                <label>Search Student</label>
+                <input id="studentManagementSearch" placeholder="Search name, email, contact, or status" oninput="renderStudentManagementTable()" />
+              </div>
+              <div>
+                <label>Status</label>
+                <select id="studentManagementStatusFilter" onchange="renderStudentManagementTable()">
+                  <option value="all">All Students</option>
+                  <option value="pending_approval">Pending Approval</option>
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Rejected</option>
+                  <option value="expired">Expired Access</option>
+                  <option value="zero_credit">Zero Credits</option>
+                </select>
+              </div>
+            </div>
+            <p id="studentApprovalSummary" class="muted-text"></p>
+            <div id="studentsList" class="students-list"></div>
+          </div>
+        </div>
+
+
+
+        <div id="admin-professor-profile" class="admin-section-panel">
+          <div class="panel wide-panel">
+            <h3>Edit Professor Profile</h3>
+            <p class="muted-text">Update the information shown on the public About the Professor page.</p>
+
+            <div class="admin-grid">
+              <div>
+                <label>Professor Name</label>
+                <input id="editProfessorName" placeholder="Example: Prof. Juan Dela Cruz" />
+
+                <label>Position / Title</label>
+                <input id="editProfessorPosition" placeholder="Example: Professor / CPA / Instructor" />
+
+                <label>Subject</label>
+                <input id="editProfessorSubject" placeholder="Example: Financial Accounting and Reporting" />
+
+                <label>Email Address</label>
+                <input id="editProfessorEmail" type="email" placeholder="Example: professor@email.com" />
+
+                <label>Consultation Hours</label>
+                <input id="editProfessorHours" placeholder="Example: Monday to Friday, 3:00 PM – 5:00 PM" />
+
+                <label>Teaching Philosophy / Profile Description</label>
+                <textarea id="editProfessorPhilosophy" rows="6" placeholder="Write a short professor profile or teaching philosophy."></textarea>
+
+                <button class="btn primary" onclick="saveProfessorProfile()">Save Professor Profile</button>
+              </div>
+
+              <div>
+                <label>Professor Profile Photo Label</label>
+                <input id="editProfessorPhoto" placeholder="Photo label if no image is uploaded" />
+
+                <label>Upload Professor Photo</label>
+                <input id="editProfessorPhotoFile" type="file" accept=".jpg,.jpeg,image/jpeg" />
+                <p class="muted-text">Accepted file type: JPG or JPEG.</p>
+
+                <div id="editProfessorPhotoPreview" class="profile-photo admin-photo-preview">Photo</div>
+
+                <button class="btn ghost" type="button" onclick="removeProfessorPhoto()">Remove Uploaded Photo</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="admin-scores" class="admin-section-panel">
+          <div class="panel wide-panel">
+            <h3>Student Scores</h3>
+            <p>View submitted quiz scores from the backend. Static GitHub Pages mode will show only scores saved through the deployed backend.</p>
+            <button class="btn secondary" onclick="loadStudentScores()">Refresh Scores</button>
+            <div id="scoresList" class="score-list"></div>
+          </div>
+        </div>
+
+
+        <div id="admin-payments" class="admin-section-panel">
+          <div class="panel wide-panel">
+            <h3>Quiz Payment Requests</h3>
+            <p>Students must have approved quiz credits before generating a quiz. Quiz credits cost <strong>₱2 per question</strong>. Approving a payment adds quiz credits to the student account.</p>
+            <button class="btn secondary" onclick="loadPaymentRequestsForAdmin()">Refresh Payment Requests</button>
+            <div id="adminPaymentRequests" class="students-list"></div>
+          </div>
+        </div>
+
+        <div id="admin-student-view" class="admin-section-panel">
+          <div class="student-preview-banner">Student View Preview Mode</div>
+          <div class="panel wide-panel">
+            <h3>User / Student View Preview</h3>
+            <p class="muted-text">Use this to check the student side without logging out of the admin account.</p>
+            <div class="student-preview-controls">
+              <button class="btn ghost small-btn" onclick="renderStudentViewPreview('dashboard')">Dashboard</button>
+              <button class="btn ghost small-btn" onclick="renderStudentViewPreview('topics')">Topics</button>
+              <button class="btn ghost small-btn" onclick="renderStudentViewPreview('quizzer')">Quizzer Setup</button>
+              <button class="btn ghost small-btn" onclick="renderStudentViewPreview('about')">About Professor</button>
+            </div>
+            <div id="studentViewPreviewBox" class="student-view-preview-box"></div>
+          </div>
+        </div>
+
+        <div id="admin-site-settings" class="admin-section-panel">
+          <div class="panel wide-panel">
+            <h3>Settings</h3>
+            <p class="muted-text">Manage general website details, professor profile, announcements, and deployment reminders.</p>
+            <div class="button-row">
+              <button class="btn secondary" type="button" onclick="showAdminSection('admin-professor-profile')">Edit Professor Profile</button>
+            </div>
+            <div class="settings-editor panel soft-panel">
+              <h3>Student Homepage Announcement</h3>
+              <p class="muted-text">This message appears on the student homepage.</p>
+              <label>Announcement</label>
+              <textarea id="adminAnnouncementInput" rows="4" placeholder="Example: Please review Cost-Volume-Profit Analysis before the next quiz."></textarea>
+              <button class="btn primary" type="button" onclick="saveSiteSettings()">Save Announcement</button>
+              <p id="siteSettingsMessage" class="form-message"></p>
+            </div>
+
+            <ul class="feature-list">
+              <li><strong>Question Status Control:</strong> only approved questions appear to students.</li>
+              <li><strong>Student Trial Control:</strong> approve students and add trial days.</li>
+              <li><strong>Topic and Lesson Tab Builder:</strong> add custom topics, examples, reviewer notes, and common mistakes.</li>
+              <li><strong>Professor Profile Editor:</strong> update the About page without changing code.</li>
+              <li><strong>Student Scores:</strong> monitor quiz performance after deploying the backend.</li>
+              <li><strong>Security Reminder:</strong> use the Node backend for real login security; GitHub Pages alone cannot protect private data.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">© 2026 K Learning Hub. Created for educational purposes.</div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
