@@ -1,43 +1,90 @@
-# K Learning Hub
+# K Learning Hub Backend
 
-Unified CPA Review Learning Hub for FAR, AFAR, MAS, TAX, RFBT, and AUD.
+Node.js + Express backend for K Learning Hub.
 
-## Current Student Setup
+## Security updates included
 
-- Students can register with name, contact number, email, and password.
-- Admin approval is required before access.
-- Students can select subjects from the Subject navigation dropdown.
-- Each subject has its own background color/theme.
-- Students can read lessons, take quizzes, and review quiz history.
-- Quiz credits cost ₱2 per question.
-- Subscription features were removed for now and can be added later.
+- Passwords are stored as PBKDF2 salted hashes, not plain text.
+- Token-based authentication is required for protected routes.
+- Admin-only routes are protected on the backend, not only hidden in the frontend.
+- Login, OTP, registration, and payment requests have basic rate limiting.
+- Security headers are added.
+- CORS can be restricted through `FRONTEND_URL`.
+- Payment reference numbers are checked for duplicates.
+- Receipt uploads are validated as image data and limited in size.
+- Admin actions and sensitive events are recorded in `auditLogs`.
+- Root health route added: `/` and `/api/health`.
 
-## Files
+## Install
 
-- `index.html` - website structure
-- `style.css` - design and themes
-- `script.js` - frontend logic
-- `k-learning-logo.png` - logo
-- `gcash-qr.jpg` - GCash QR image
-- `backend/` - optional Node.js backend for Render deployment
+```bash
+npm install
+```
 
-## GitHub Pages
+## Run locally
 
-Upload the root files to GitHub and enable GitHub Pages from Settings → Pages.
+```bash
+npm start
+```
 
-## Backend
+## Important production environment variables
 
-For full login, registration, payments, and saved data, deploy the `backend` folder to Render as a Web Service.
+Set these in Render → Environment:
 
-## LECPA Syllabus Content Update
+```env
+NODE_ENV=production
+FRONTEND_URL=https://kirkong-cloud.github.io
+TOKEN_SECRET=use-a-long-random-secret
+TOKEN_TTL_HOURS=8
+ADMIN_EMAIL=your-admin-email@example.com
+ADMIN_PASSWORD=ChangeThisStrongPassword123!
+ADMIN_NAME=Administrator
+ENABLE_DEMO_ACCOUNTS=false
+```
 
-This version integrates the six-subject LECPA structure based on PRBOA Resolution No. 30, s. 2022:
+Do **not** commit a real `.env` file to GitHub.
 
-- FAR
-- AFAR
-- MAS / Management Services
-- AUD
-- RFBT
-- TAX
+## Demo accounts
 
-The topic cards and lesson tabs include original CPA-review style discussions, key concepts, application notes, and review notes. These are original summaries for educational use and are not copied from copyrighted textbooks or review books.
+Demo accounts are no longer forced in production.
+
+For local testing only, set:
+
+```env
+NODE_ENV=development
+ENABLE_DEMO_ACCOUNTS=true
+```
+
+## Health check
+
+```text
+GET /
+GET /api/health
+```
+
+## Key APIs
+
+- `POST /api/auth/send-registration-otp`
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `GET /api/me`
+- `GET /api/content`
+- `POST /api/topics` admin only
+- `PUT /api/topics/:id` admin only
+- `POST /api/topics/:id/tabs` admin only
+- `PUT /api/topics/:id/tabs/:tabId` admin only
+- `DELETE /api/topics/:id/tabs/:tabId` admin only
+- `POST /api/quizzes` admin only
+- `PUT /api/quizzes/:id` admin only
+- `GET /api/admin/quizzes` admin only
+- `GET /api/admin/users` admin only
+- `POST /api/admin/users/:id/approval` admin only
+- `POST /api/admin/users/:id/add-quiz-credits` admin only
+- `POST /api/payments/request` student only
+- `GET /api/admin/payment-requests` admin only
+- `POST /api/admin/payment-requests/:id/approve` admin only
+- `GET /api/admin/audit-logs` admin only
+
+## Next recommended upgrade
+
+For public production use, migrate from `backend/data/database.json` to Supabase PostgreSQL with Row Level Security and Supabase Storage for receipt images.

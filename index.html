@@ -552,7 +552,12 @@
             <h3>Add Lesson Menu Tab</h3>
             <p class="muted-text">Use this to add extra discussion tabs under a topic, such as Journal Entries, Examples, Common Mistakes, or Reviewer Notes.</p>
             <label>Choose Topic</label>
-            <select id="lessonTabTopicSelect"></select>
+            <select id="lessonTabTopicSelect" onchange="renderLessonTabsList(); cancelLessonTabEdit();"></select>
+            <div class="lesson-tab-toolbar">
+              <button type="button" class="btn ghost small-btn" onclick="renderLessonTabsList()">Refresh Current Tabs</button>
+              <button type="button" class="btn ghost small-btn" onclick="openSelectedLessonTopic()">Open Actual Topic View</button>
+            </div>
+            <div id="lessonTabStatus" class="inline-status muted-text">Select a topic to view existing lesson tabs.</div>
             <label>New Tab Title</label>
             <input id="lessonTabTitle" placeholder="Example: Journal Entries" />
             <label>Tab Discussion / Content</label>
@@ -583,7 +588,8 @@
             </div>
 
             <hr />
-            <h4>Existing Additional Tabs</h4>
+            <h4>Current Lesson Tabs for Selected Topic</h4>
+            <p class="muted-text small-note">This list updates immediately after adding, editing, or deleting a tab. Use Edit to revise a tab, or Delete to remove it.</p>
             <div id="lessonTabsList"></div>
           </div>
         </div>

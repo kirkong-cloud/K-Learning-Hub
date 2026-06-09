@@ -2196,3 +2196,79 @@ body.subject-theme-aud .section-title h2 {
     min-width: 760px;
   }
 }
+
+/* Lesson Tab Manager - direct admin visibility */
+.lesson-tab-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 12px;
+}
+.inline-status {
+  margin: 8px 0 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+}
+.status-success {
+  color: #166534;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+.status-error {
+  color: #991b1b;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+.lesson-tab-list-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
+  margin-bottom: 10px;
+}
+.lesson-tab-list-header span {
+  color: var(--primary);
+  font-weight: 700;
+}
+.lesson-tab-admin-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #ffffff;
+  margin-bottom: 10px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+}
+.lesson-tab-admin-main {
+  min-width: 0;
+  flex: 1;
+}
+.lesson-tab-admin-main small {
+  display: block;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.lesson-tab-admin-main p {
+  margin: 8px 0 0;
+  color: var(--text);
+  line-height: 1.45;
+}
+@media (max-width: 720px) {
+  .lesson-tab-admin-card {
+    flex-direction: column;
+  }
+  .lesson-tab-admin-card .mini-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}

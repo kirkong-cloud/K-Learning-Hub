@@ -4005,24 +4005,62 @@ function loadTopicEditor() {
   renderLessonTabsList();
 }
 
+function getSelectedLessonTabTopic() {
+  const select = document.getElementById("lessonTabTopicSelect");
+  const selectedId = select?.value || document.getElementById("editTopicSelect")?.value || topics[0]?.id;
+  return ensureTopicShape(topics.find(t => t.id === selectedId));
+}
+
+function showLessonTabStatus(message, type = "info") {
+  const status = document.getElementById("lessonTabStatus");
+  if (!status) return;
+  status.textContent = message || "";
+  status.className = `inline-status ${type === "success" ? "status-success" : type === "error" ? "status-error" : "muted-text"}`;
+}
+
+function openSelectedLessonTopic() {
+  const topic = getSelectedLessonTabTopic();
+  if (!topic) return alert("Please select a topic first.");
+  openTopic(topic.id, "discussion");
+}
+
 function renderLessonTabsList() {
   const box = document.getElementById("lessonTabsList");
   const select = document.getElementById("lessonTabTopicSelect");
   if (!box || !select) return;
-  const topic = ensureTopicShape(topics.find(t => t.id === select.value || document.getElementById("editTopicSelect")?.value));
-  if (!topic) return;
-  box.innerHTML = (topic.tabs || []).map(tab => `
-    <div class="mini-row lesson-tab-row">
-      <div>
-        <strong>${escapeHtml(tab.title)}</strong><br>
-        <small>${escapeHtml(tab.id)}</small>
-      </div>
-      <div class="mini-actions">
-        <button class="btn ghost small-btn" onclick="startLessonTabEdit('${topic.id}', '${tab.id}')">Edit</button>
-        <button class="btn danger-btn small-btn" onclick="deleteLessonTab('${topic.id}', '${tab.id}')">Delete</button>
-      </div>
+  const topic = getSelectedLessonTabTopic();
+  if (!topic) {
+    box.innerHTML = "<p class='muted-text'>No topic selected.</p>";
+    showLessonTabStatus("No topic selected.");
+    return;
+  }
+  if (select.value !== topic.id) select.value = topic.id;
+  const tabs = topic.tabs || [];
+  showLessonTabStatus(`${topic.title}: ${tabs.length} additional lesson tab(s) currently saved.`, tabs.length ? "success" : "info");
+
+  box.innerHTML = `
+    <div class="lesson-tab-list-header">
+      <strong>${escapeHtml(getSubjectShortName(topic.subject))} - ${escapeHtml(topic.title)}</strong>
+      <span>${tabs.length} tab(s)</span>
     </div>
-  `).join("") || "<p class='muted-text'>No additional lesson tabs yet.</p>";
+    ${tabs.map(tab => {
+      const preview = String(tab.content || "").replace(/\s+/g, " ").slice(0, 160);
+      const updated = tab.updatedAt || tab.createdAt || "";
+      return `
+        <div class="lesson-tab-admin-card">
+          <div class="lesson-tab-admin-main">
+            <strong>${escapeHtml(tab.title)}</strong>
+            <small>ID: ${escapeHtml(tab.id)}${updated ? ` • Last saved: ${new Date(updated).toLocaleString()}` : ""}</small>
+            <p>${escapeHtml(preview || "No preview available.")}${preview.length >= 160 ? "..." : ""}</p>
+          </div>
+          <div class="mini-actions">
+            <button class="btn ghost small-btn" onclick="startLessonTabEdit('${escapeJs(topic.id)}', '${escapeJs(tab.id)}')">Edit</button>
+            <button class="btn danger-btn small-btn" onclick="deleteLessonTab('${escapeJs(topic.id)}', '${escapeJs(tab.id)}')">Delete</button>
+          </div>
+        </div>
+      `;
+    }).join("") || "<p class='muted-text'>No additional lesson tabs yet. Add one above and it will appear here immediately.</p>"}
+  `;
 }
 
 async function saveTopicEdits() {
@@ -4148,16 +4186,21 @@ async function addLessonTab() {
   topic.tabs.push(newTab);
 
   try {
-    const savedTopic = await saveTopicToBackend(topic);
-    if (savedTopic) Object.assign(topic, ensureTopicShape(savedTopic));
+    if (API_BASE_URL) {
+      const result = await createLessonTabInBackend(topic.id, newTab);
+      if (result?.tab?.id) newTab.id = result.tab.id;
+    }
     await saveData();
     document.getElementById("lessonTabTitle").value = "";
     document.getElementById("lessonTabContent").value = "";
     await refreshLessonViewAfterTabChange(topic.id, newTab.id);
-    alert("Lesson tab added successfully and is now reflected in the actual lesson page.");
+    showLessonTabStatus(`Added lesson tab: ${newTab.title}`, "success");
+    alert("Lesson tab added successfully and is now visible in the current tab list and actual lesson page.");
   } catch (error) {
     topic.tabs = topic.tabs.filter(tab => tab.id !== newTab.id);
+    renderLessonTabsList();
     console.error(error);
+    showLessonTabStatus(error.message || "Lesson tab was not saved.", "error");
     alert(error.message || "Lesson tab was not saved. Please check backend connection.");
   }
 }
@@ -4171,14 +4214,16 @@ async function deleteLessonTab(topicId, tabId) {
   topic.tabs = topic.tabs.filter(tab => tab.id !== tabId);
 
   try {
-    const savedTopic = await saveTopicToBackend(topic);
-    if (savedTopic) Object.assign(topic, ensureTopicShape(savedTopic));
+    if (API_BASE_URL) await deleteLessonTabInBackend(topic.id, tabId);
     await saveData();
     await refreshLessonViewAfterTabChange(topic.id, "discussion");
-    alert("Lesson tab deleted successfully.");
+    showLessonTabStatus("Lesson tab deleted. The current list and actual lesson page were refreshed.", "success");
+    alert("Lesson tab deleted successfully and is no longer visible in the actual lesson page.");
   } catch (error) {
     topic.tabs = originalTabs;
+    renderLessonTabsList();
     console.error(error);
+    showLessonTabStatus(error.message || "Lesson tab was not deleted.", "error");
     alert(error.message || "Lesson tab was not deleted. Please check backend connection.");
   }
 }
@@ -4224,17 +4269,27 @@ async function saveLessonTabEdit() {
   tab.updatedAt = new Date().toISOString();
 
   try {
-    const savedTopic = await saveTopicToBackend(topic);
-    if (savedTopic) Object.assign(topic, ensureTopicShape(savedTopic));
+    if (API_BASE_URL) await updateLessonTabInBackend(topic.id, tab.id, { title: newTitle, content: newContent });
     await saveData();
     await refreshLessonViewAfterTabChange(topic.id, tab.id);
     cancelLessonTabEdit();
-    alert("Lesson tab updated successfully and is now reflected in the actual lesson page.");
+    showLessonTabStatus(`Updated lesson tab: ${newTitle}`, "success");
+    alert("Lesson tab updated successfully and is now visible in the current tab list and actual lesson page.");
   } catch (error) {
     Object.assign(tab, original);
+    renderLessonTabsList();
     console.error(error);
+    showLessonTabStatus(error.message || "Lesson tab was not updated.", "error");
     alert(error.message || "Lesson tab was not updated. Please check backend connection.");
   }
+}
+
+async function replaceLocalTopic(updatedTopic) {
+  if (!updatedTopic) return null;
+  const shaped = ensureTopicShape(updatedTopic);
+  const index = topics.findIndex(item => item.id === shaped.id);
+  if (index !== -1) topics[index] = shaped;
+  return shaped;
 }
 
 async function saveTopicToBackend(topic) {
@@ -4248,9 +4303,45 @@ async function saveTopicToBackend(topic) {
   if (!response.ok) {
     throw new Error(data.error || "Unable to save topic to backend.");
   }
-  const index = topics.findIndex(item => item.id === topic.id);
-  if (index !== -1) topics[index] = ensureTopicShape(data);
-  return ensureTopicShape(data);
+  return replaceLocalTopic(data);
+}
+
+async function createLessonTabInBackend(topicId, tab) {
+  if (!API_BASE_URL) return null;
+  const response = await fetch(`${API_BASE_URL}/api/topics/${topicId}/tabs`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify(tab)
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || "Unable to add lesson tab to backend.");
+  if (data.topic) await replaceLocalTopic(data.topic);
+  return data;
+}
+
+async function updateLessonTabInBackend(topicId, tabId, values) {
+  if (!API_BASE_URL) return null;
+  const response = await fetch(`${API_BASE_URL}/api/topics/${topicId}/tabs/${tabId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify(values)
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || "Unable to update lesson tab in backend.");
+  if (data.topic) await replaceLocalTopic(data.topic);
+  return data;
+}
+
+async function deleteLessonTabInBackend(topicId, tabId) {
+  if (!API_BASE_URL) return null;
+  const response = await fetch(`${API_BASE_URL}/api/topics/${topicId}/tabs/${tabId}`, {
+    method: "DELETE",
+    headers: getAuthHeaders()
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || "Unable to delete lesson tab in backend.");
+  if (data.topic) await replaceLocalTopic(data.topic);
+  return data;
 }
 
 async function addQuizQuestion() {
