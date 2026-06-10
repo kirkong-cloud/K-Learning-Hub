@@ -1,101 +1,98 @@
-# K Learning Hub Backend
+# K Learning Hub
 
-Node.js + Express backend for K Learning Hub.
+Unified CPA Review Learning Hub for FAR, AFAR, MAS, TAX, RFBT, and AUD.
 
-## Security updates included
+## Current Student Setup
 
-- Passwords are stored as PBKDF2 salted hashes, not plain text.
-- Token-based authentication is required for protected routes.
-- Admin-only routes are protected on the backend, not only hidden in the frontend.
-- Login, OTP, registration, and payment requests have basic rate limiting.
-- Security headers are added.
-- CORS can be restricted through `FRONTEND_URL`.
-- Payment reference numbers are checked for duplicates.
-- Receipt uploads are validated as image data and limited in size.
-- Admin actions and sensitive events are recorded in `auditLogs`.
-- Root health route added: `/` and `/api/health`.
+- Students can register with name, contact number, email, and password.
+- Admin approval is required before access.
+- Students can select subjects from the Subject navigation dropdown.
+- Each subject has its own background color/theme.
+- Students can read lessons, take quizzes, and review quiz history.
+- Quiz credits cost ₱2 per question.
+- Subscription features were removed for now and can be added later.
 
-## Install
+## Files
 
-```bash
-npm install
-```
+- `index.html` - website structure
+- `style.css` - design and themes
+- `script.js` - frontend logic
+- `k-learning-logo.png` - logo
+- `gcash-qr.jpg` - GCash QR image
+- `backend/` - optional Node.js backend for Render deployment
 
-## Run locally
+## GitHub Pages
 
-```bash
-npm start
-```
+Upload the root files to GitHub and enable GitHub Pages from Settings → Pages.
 
-## Important production environment variables
+## Backend
 
-Set these in Render → Environment:
+For full login, registration, payments, and saved data, deploy the `backend` folder to Render as a Web Service.
+
+## LECPA Syllabus Content Update
+
+This version integrates the six-subject LECPA structure based on PRBOA Resolution No. 30, s. 2022:
+
+- FAR
+- AFAR
+- MAS / Management Services
+- AUD
+- RFBT
+- TAX
+
+The topic cards and lesson tabs include original CPA-review style discussions, key concepts, application notes, and review notes. These are original summaries for educational use and are not copied from copyrighted textbooks or review books.
+
+## Security-Hardened Backend Notes
+
+This version includes backend security improvements:
+
+- Password hashing using PBKDF2 with salt
+- Token-based login
+- Backend-protected admin routes
+- Basic rate limiting
+- Duplicate GCash reference validation
+- Receipt image validation and size limit
+- Admin audit logs
+- Root backend health routes: `/` and `/api/health`
+
+### Render Environment Variables
+
+Set these in Render before public use:
 
 ```env
 NODE_ENV=production
 FRONTEND_URL=https://kirkong-cloud.github.io
-TOKEN_SECRET=use-a-long-random-secret
+TOKEN_SECRET=replace-with-a-long-random-secret
 TOKEN_TTL_HOURS=8
 ADMIN_EMAIL=your-admin-email@example.com
 ADMIN_PASSWORD=ChangeThisStrongPassword123!
 ADMIN_NAME=Administrator
 ENABLE_DEMO_ACCOUNTS=false
+MAX_RECEIPT_BYTES=750000
 ```
 
-Do **not** commit a real `.env` file to GitHub.
+Do not upload a real `.env` file to GitHub.
 
-## Demo accounts
+## Lesson Menu Tab Manager Update
 
-Demo accounts are no longer forced in production.
+The Admin Lesson Menu Tab section now shows the currently saved tabs for the selected topic immediately. After adding, editing, or deleting a tab, the current list and the actual topic lesson page are refreshed automatically.
 
-For local testing only, set:
+Admin workflow:
+1. Go to Admin Menu → Content Management → Lesson Menu Tabs.
+2. Select a topic.
+3. Existing additional tabs appear under Current Lesson Tabs for Selected Topic.
+4. Use Add, Edit, Delete, Refresh Current Tabs, or Open Actual Topic View.
+
+If using Render, redeploy the backend after uploading this version because lesson tab backend routes are required for online saving.
+
+## Real Email OTP Update
+
+The registration OTP is no longer displayed on the website. It is sent to the student's email through the Render backend.
+
+Required Render environment variables:
 
 ```env
-NODE_ENV=development
-ENABLE_DEMO_ACCOUNTS=true
-```
-
-## Health check
-
-```text
-GET /
-GET /api/health
-```
-
-## Key APIs
-
-- `POST /api/auth/send-registration-otp`
-- `POST /api/auth/register`
-- `POST /api/auth/login`
-- `GET /api/me`
-- `GET /api/content`
-- `POST /api/topics` admin only
-- `PUT /api/topics/:id` admin only
-- `POST /api/topics/:id/tabs` admin only
-- `PUT /api/topics/:id/tabs/:tabId` admin only
-- `DELETE /api/topics/:id/tabs/:tabId` admin only
-- `POST /api/quizzes` admin only
-- `PUT /api/quizzes/:id` admin only
-- `GET /api/admin/quizzes` admin only
-- `GET /api/admin/users` admin only
-- `POST /api/admin/users/:id/approval` admin only
-- `POST /api/admin/users/:id/add-quiz-credits` admin only
-- `POST /api/payments/request` student only
-- `GET /api/admin/payment-requests` admin only
-- `POST /api/admin/payment-requests/:id/approve` admin only
-- `GET /api/admin/audit-logs` admin only
-
-## Next recommended upgrade
-
-For public production use, migrate from `backend/data/database.json` to Supabase PostgreSQL with Row Level Security and Supabase Storage for receipt images.
-
-## Real Email OTP Setup
-
-The registration OTP is now sent by email and is no longer displayed on the website.
-
-Add these environment variables in Render > Environment:
-
-```env
+FRONTEND_URL=https://kirkong-cloud.github.io/K-Learning-Hub
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_SECURE=false
@@ -104,21 +101,41 @@ SMTP_PASS=your-app-password
 OTP_FROM_EMAIL=your-email@gmail.com
 ```
 
-For Gmail, use an App Password instead of your normal Gmail password. After adding the variables, redeploy the Render service.
+After adding the environment variables, redeploy the Render Web Service.
 
-## Lesson/Sub-Lesson Data Shape
+## Lesson Menu Update
 
-Lesson tabs now support nested sub-lessons:
+This version removes the built-in Main Discussion and Practice tabs from the actual student lesson menu. The lesson page now displays only the Lesson Menu Tabs created by the admin.
 
-```json
-{
-  "id": "key-concepts",
-  "title": "Key Concepts",
-  "content": "Main tab content",
-  "subtabs": [
-    { "id": "recognition", "title": "Recognition", "content": "Sub-lesson content" }
-  ]
-}
+Admin improvements:
+- Current Lesson Menu Tabs are visible after selecting a topic.
+- Each Lesson Menu Tab can be edited or deleted.
+- Each Lesson Menu Tab can now have Sub-Lesson Menu Tabs.
+- Sub-Lesson Menu Tabs can be added, edited, and deleted.
+- Content textareas include Bold, Italic, and Underline insert buttons.
+
+Backend improvements:
+- Lesson tabs now support nested `subtabs`.
+- The existing topic and lesson tab endpoints preserve sub-lessons.
+
+
+## Admin Login Fix / Render Setup
+
+For Render deployment, add these Environment Variables so the backend always has a valid admin account:
+
+```env
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=Admin123!
+ADMIN_NAME=Administrator
+RESET_ADMIN_PASSWORD_ON_START=false
 ```
 
-The `/api/topics/:id/tabs/:tabId` update route accepts `subtabs` and normalizes them before saving.
+If you cannot login as admin after changing the password, temporarily set:
+
+```env
+RESET_ADMIN_PASSWORD_ON_START=true
+```
+
+Redeploy once, login, then set it back to `false` and redeploy again.
+
+Default admin password for the packaged local/backend database is `Admin123!` including the exclamation point.

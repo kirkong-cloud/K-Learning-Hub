@@ -3551,7 +3551,10 @@ async function loginUser(email, password) {
       body: JSON.stringify({ email, password })
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "Login failed");
+    if (!response.ok) {
+      const baseMessage = data.error || "Login failed";
+      throw new Error(baseMessage + " If this is the admin account, confirm the Render ADMIN_EMAIL and ADMIN_PASSWORD environment variables, then redeploy Render.");
+    }
     localStorage.setItem("farAuthToken", data.token);
     return data.user;
   }
