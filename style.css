@@ -2272,3 +2272,67 @@ body.subject-theme-aud .section-title h2 {
     justify-content: flex-start;
   }
 }
+
+.sublesson-menu {
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid #dbe7f5;
+}
+
+.sublesson-button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 10px 0 16px;
+}
+
+.sublesson-btn {
+  border: 1px solid #cfe0f5;
+  background: #f4f8ff;
+  border-radius: 12px;
+  padding: 10px 14px;
+  color: #12355b;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.sublesson-btn.active,
+.sublesson-btn:hover {
+  background: #0b63ce;
+  color: #fff;
+}
+
+.sublesson-panel {
+  background: #f8fbff;
+  border: 1px solid #dbe7f5;
+  border-radius: 18px;
+  padding: 18px;
+  margin-top: 12px;
+}
+
+.sublesson-admin-list {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px dashed #b8c8dd;
+  border-radius: 14px;
+  background: #f8fbff;
+}
+
+.sublesson-admin-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0;
+  border-top: 1px solid #e5edf7;
+}
+
+.sublesson-admin-item:first-of-type {
+  border-top: 0;
+}
+
+.tiny-btn {
+  padding: 6px 10px !important;
+  font-size: 0.78rem !important;
+  border-radius: 9px !important;
+}

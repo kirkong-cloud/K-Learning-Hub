@@ -3162,7 +3162,7 @@ let siteSettings = {
   announcement: "Welcome to the Learning Hub. Check your quiz credits and continue your lessons regularly."
 };
 
-const API_BASE_URL = ""; // Example: "http://localhost:3000" or your deployed backend URL
+const API_BASE_URL = "https://k-learning-hub.onrender.com"; // Render backend URL
 
 const SUBJECTS = [
   { id: "FAR", name: "Financial Accounting and Reporting", theme: "blue" },
@@ -3212,8 +3212,29 @@ function slugify(value) {
     .replace(/^-+|-+$/g, "") || `topic-${Date.now()}`;
 }
 
+function normalizeSubLessonTabs(subtabs = []) {
+  return Array.isArray(subtabs)
+    ? subtabs.filter(Boolean).map((subtab, index) => ({
+        id: String(subtab.id || slugify(subtab.title || `sub-lesson-${index + 1}`)).trim(),
+        title: String(subtab.title || "Untitled Sub-Lesson").trim(),
+        content: String(subtab.content || "").trim(),
+        createdAt: subtab.createdAt || new Date().toISOString(),
+        updatedAt: subtab.updatedAt
+      }))
+    : [];
+}
+
 function ensureTopicShape(topic) {
+  if (!topic) return topic;
   topic.tabs = Array.isArray(topic.tabs) ? topic.tabs : [];
+  topic.tabs = topic.tabs.map((tab, index) => ({
+    id: String(tab.id || slugify(tab.title || `lesson-tab-${index + 1}`)).trim(),
+    title: String(tab.title || "Untitled Lesson Tab").trim(),
+    content: String(tab.content || "").trim(),
+    createdAt: tab.createdAt || new Date().toISOString(),
+    updatedAt: tab.updatedAt,
+    subtabs: normalizeSubLessonTabs(tab.subtabs || [])
+  }));
   return topic;
 }
 
@@ -3515,15 +3536,11 @@ async function sendRegistrationOtp(name, contactNumber, email, password) {
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || "Unable to send OTP.");
-    pendingRegistrationOtp = { name, contactNumber, email, password, otpPreview: data.otpPreview || "" };
+    pendingRegistrationOtp = { name, contactNumber, email, password };
     return data;
   }
 
-  const savedUsers = JSON.parse(localStorage.getItem("farUsers") || "[]");
-  if ([...getLocalDemoUsers(), ...savedUsers].some(u => u.email.toLowerCase() === email.toLowerCase())) throw new Error("Email already exists.");
-  const otp = String(Math.floor(100000 + Math.random() * 900000));
-  pendingRegistrationOtp = { name, contactNumber, email, password, otp, expiresAt: Date.now() + 10 * 60 * 1000, otpPreview: otp };
-  return { message: "OTP generated. Enter the 6-digit OTP to continue registration.", otpPreview: otp };
+  throw new Error("Email OTP requires the Render backend. Please connect API_BASE_URL to your Render backend first.");
 }
 
 async function loginUser(email, password) {
@@ -3907,6 +3924,50 @@ function renderQuizContent(value) {
   return renderAccountingContent(value);
 }
 
+function sanitizeLessonHtml(html) {
+  let safe = String(html || "");
+  safe = safe.replace(/<\/?(script|iframe|object|embed|link|style|meta|form|input|button|textarea|select)[^>]*>/gi, "");
+  safe = safe.replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "");
+  safe = safe.replace(/javascript:/gi, "");
+  return safe;
+}
+
+function renderRichLessonContent(value) {
+  const raw = String(value || "");
+  if (raw.includes("[T-ACCOUNT]") || raw.includes("[ACCOUNTING-FORMAT]") || raw.includes("[TABLE-FORM]")) {
+    return renderDesignedTemplates(raw);
+  }
+  const protectedHtml = raw
+    .replace(/<\s*(strong|b)\s*>/gi, "[[BOLD_OPEN]]")
+    .replace(/<\s*\/\s*(strong|b)\s*>/gi, "[[BOLD_CLOSE]]")
+    .replace(/<\s*(em|i)\s*>/gi, "[[ITALIC_OPEN]]")
+    .replace(/<\s*\/\s*(em|i)\s*>/gi, "[[ITALIC_CLOSE]]")
+    .replace(/<\s*u\s*>/gi, "[[UNDERLINE_OPEN]]")
+    .replace(/<\s*\/\s*u\s*>/gi, "[[UNDERLINE_CLOSE]]");
+  return `<p>${escapeHtml(protectedHtml)
+    .replace(/\n/g, "<br>")
+    .replace(/\[\[BOLD_OPEN\]\]/g, "<strong>")
+    .replace(/\[\[BOLD_CLOSE\]\]/g, "</strong>")
+    .replace(/\[\[ITALIC_OPEN\]\]/g, "<em>")
+    .replace(/\[\[ITALIC_CLOSE\]\]/g, "</em>")
+    .replace(/\[\[UNDERLINE_OPEN\]\]/g, "<u>")
+    .replace(/\[\[UNDERLINE_CLOSE\]\]/g, "</u>")}</p>`;
+}
+
+function formatTextareaSelection(textareaId, format) {
+  const textarea = document.getElementById(textareaId);
+  if (!textarea) return;
+  const tags = { bold: ["<strong>", "</strong>"], italic: ["<em>", "</em>"], underline: ["<u>", "</u>"] };
+  const [openTag, closeTag] = tags[format] || tags.bold;
+  const start = textarea.selectionStart ?? textarea.value.length;
+  const end = textarea.selectionEnd ?? textarea.value.length;
+  const selected = textarea.value.slice(start, end) || "text";
+  textarea.value = textarea.value.slice(0, start) + openTag + selected + closeTag + textarea.value.slice(end);
+  textarea.focus();
+  textarea.selectionStart = start + openTag.length;
+  textarea.selectionEnd = start + openTag.length + selected.length;
+}
+
 function renderAccountingContent(value) {
   const raw = String(value || "");
   if (raw.includes("[T-ACCOUNT]") || raw.includes("[ACCOUNTING-FORMAT]") || raw.includes("[TABLE-FORM]")) {
@@ -3916,17 +3977,14 @@ function renderAccountingContent(value) {
   return `<p>${escaped}</p>`;
 }
 
-function openTopic(topicId, initialLessonId = "discussion") {
+function openTopic(topicId, initialLessonId = null) {
   currentOpenTopicId = topicId;
-  currentOpenLessonId = initialLessonId || "discussion";
   const topic = ensureTopicShape(topics.find(t => t.id === topicId));
   const content = document.getElementById("topicContent");
   const customTabs = topic.tabs || [];
-  const menuItems = [
-    { id: "discussion", title: "Discussion" },
-    ...customTabs.map(tab => ({ id: tab.id, title: tab.title })),
-    { id: "practice", title: "Practice" }
-  ];
+  const firstLessonId = customTabs[0]?.id || null;
+  currentOpenLessonId = initialLessonId || firstLessonId;
+  const menuItems = customTabs.map(tab => ({ id: tab.id, title: tab.title }));
   const menuButtons = menuItems.map(item => `
       <button type="button" class="lesson-menu-btn" data-lesson-id="${escapeHtml(item.id)}" onclick="showTopicLesson('${escapeJs(topic.id)}', '${escapeJs(item.id)}')">${escapeHtml(item.title)}</button>
     `).join("");
@@ -3943,36 +4001,61 @@ function openTopic(topicId, initialLessonId = "discussion") {
     </article>
   `;
   showPage("topic-detail");
-  showTopicLesson(topic.id, initialLessonId || "discussion");
+  showTopicLesson(topic.id, currentOpenLessonId);
 }
 
 function showTopicLesson(topicId, lessonId) {
   currentOpenTopicId = topicId;
-  currentOpenLessonId = lessonId || "discussion";
   const topic = ensureTopicShape(topics.find(t => t.id === topicId));
   const holder = document.getElementById("activeLessonContent");
   if (!topic || !holder) return;
 
-  let title = "Discussion";
-  let body = `<p>${escapeHtml(topic.discussion || "Select a lesson tab from the menu to begin.").replace(/\n/g, "<br>")}</p>`;
+  const tabs = topic.tabs || [];
+  const activeLessonId = lessonId || tabs[0]?.id || null;
+  currentOpenLessonId = activeLessonId;
 
-  if (lessonId === "practice") {
-    title = "Practice";
-    body = "<p>After reviewing this lesson, go to the Quizzer tab to answer theory and problem-solving questions.</p>";
-  } else if (lessonId !== "discussion") {
-    const tab = (topic.tabs || []).find(item => item.id === lessonId);
-    if (tab) {
-      title = tab.title;
-      body = renderAccountingContent(tab.content);
-    }
+  if (!activeLessonId) {
+    holder.innerHTML = `<section class="lesson-panel"><h3>No Lesson Menu Tabs Yet</h3><p class="muted-text">This topic has no Lesson Menu Tabs yet. Add tabs from Admin → Lesson Menu Tabs.</p></section>`;
+    return;
   }
 
-  markLessonViewed(topicId, lessonId);
-  holder.innerHTML = `<section class="lesson-panel"><h3>${escapeHtml(title)}</h3>${body}</section>`;
+  const tab = tabs.find(item => item.id === activeLessonId);
+  if (!tab) {
+    holder.innerHTML = `<section class="lesson-panel"><h3>Lesson Not Found</h3><p class="muted-text">Please select another lesson tab.</p></section>`;
+    return;
+  }
+
+  const subtabs = Array.isArray(tab.subtabs) ? tab.subtabs : [];
+  const subButtons = subtabs.length ? `
+    <div class="sublesson-menu">
+      <h4>Sub-Lesson Menu</h4>
+      <div class="sublesson-button-row">
+        ${subtabs.map((sub, index) => `<button type="button" class="sublesson-btn" onclick="showSubLessonContent('${escapeJs(tab.id)}', '${escapeJs(sub.id)}')">${index + 1}. ${escapeHtml(sub.title)}</button>`).join("")}
+      </div>
+    </div>
+    <div id="activeSubLessonContent" class="active-sublesson-content"></div>
+  ` : "";
+
+  markLessonViewed(topicId, activeLessonId);
+  holder.innerHTML = `<section class="lesson-panel"><h3>${escapeHtml(tab.title)}</h3>${renderRichLessonContent(tab.content)}${subButtons}</section>`;
   document.querySelectorAll(".lesson-menu-btn").forEach(btn => {
-    btn.classList.toggle("active", btn.dataset.lessonId === lessonId);
+    btn.classList.toggle("active", btn.dataset.lessonId === activeLessonId);
+  });
+  if (subtabs[0]) showSubLessonContent(tab.id, subtabs[0].id);
+}
+
+function showSubLessonContent(parentTabId, subTabId) {
+  const topic = ensureTopicShape(topics.find(t => t.id === currentOpenTopicId));
+  const parent = topic?.tabs?.find(tab => tab.id === parentTabId);
+  const sub = parent?.subtabs?.find(item => item.id === subTabId);
+  const holder = document.getElementById("activeSubLessonContent");
+  if (!holder || !sub) return;
+  holder.innerHTML = `<section class="sublesson-panel"><h4>${escapeHtml(sub.title)}</h4>${renderRichLessonContent(sub.content)}</section>`;
+  document.querySelectorAll(".sublesson-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.getAttribute("onclick")?.includes(`'${subTabId}'`));
   });
 }
+
 
 function populateSelects() {
   const topicOptions = topics.map(t => `<option value="${t.id}">${getSubjectShortName(t.subject)} - ${t.title}</option>`).join("");
@@ -4021,7 +4104,7 @@ function showLessonTabStatus(message, type = "info") {
 function openSelectedLessonTopic() {
   const topic = getSelectedLessonTabTopic();
   if (!topic) return alert("Please select a topic first.");
-  openTopic(topic.id, "discussion");
+  openTopic(topic.id);
 }
 
 function renderLessonTabsList() {
@@ -4036,7 +4119,8 @@ function renderLessonTabsList() {
   }
   if (select.value !== topic.id) select.value = topic.id;
   const tabs = topic.tabs || [];
-  showLessonTabStatus(`${topic.title}: ${tabs.length} additional lesson tab(s) currently saved.`, tabs.length ? "success" : "info");
+  populateSubLessonParentSelect(topic);
+  showLessonTabStatus(`${topic.title}: ${tabs.length} lesson menu tab(s) currently saved.`, tabs.length ? "success" : "info");
 
   box.innerHTML = `
     <div class="lesson-tab-list-header">
@@ -4052,8 +4136,21 @@ function renderLessonTabsList() {
             <strong>${escapeHtml(tab.title)}</strong>
             <small>ID: ${escapeHtml(tab.id)}${updated ? ` • Last saved: ${new Date(updated).toLocaleString()}` : ""}</small>
             <p>${escapeHtml(preview || "No preview available.")}${preview.length >= 160 ? "..." : ""}</p>
+            <div class="sublesson-admin-list">
+              <strong>Sub-Lesson Tabs (${(tab.subtabs || []).length})</strong>
+              ${(tab.subtabs || []).map(sub => `
+                <div class="sublesson-admin-item">
+                  <span>${escapeHtml(sub.title)}</span>
+                  <div class="mini-actions">
+                    <button class="btn ghost tiny-btn" onclick="startSubLessonEdit('${escapeJs(topic.id)}', '${escapeJs(tab.id)}', '${escapeJs(sub.id)}')">Edit</button>
+                    <button class="btn danger-btn tiny-btn" onclick="deleteSubLessonTab('${escapeJs(topic.id)}', '${escapeJs(tab.id)}', '${escapeJs(sub.id)}')">Delete</button>
+                  </div>
+                </div>
+              `).join("") || "<p class='muted-text small-note'>No sub-lessons yet.</p>"}
+            </div>
           </div>
           <div class="mini-actions">
+            <button class="btn ghost small-btn" onclick="prepareSubLessonForParent('${escapeJs(tab.id)}')">Add Sub-Tab</button>
             <button class="btn ghost small-btn" onclick="startLessonTabEdit('${escapeJs(topic.id)}', '${escapeJs(tab.id)}')">Edit</button>
             <button class="btn danger-btn small-btn" onclick="deleteLessonTab('${escapeJs(topic.id)}', '${escapeJs(tab.id)}')">Delete</button>
           </div>
@@ -4061,6 +4158,114 @@ function renderLessonTabsList() {
       `;
     }).join("") || "<p class='muted-text'>No additional lesson tabs yet. Add one above and it will appear here immediately.</p>"}
   `;
+}
+
+function populateSubLessonParentSelect(topic = null) {
+  const select = document.getElementById("subLessonParentSelect");
+  if (!select) return;
+  const activeTopic = topic || getSelectedLessonTabTopic();
+  const tabs = activeTopic?.tabs || [];
+  const current = select.value;
+  select.innerHTML = tabs.map(tab => `<option value="${escapeHtml(tab.id)}">${escapeHtml(tab.title)}</option>`).join("") || `<option value="">No lesson tabs available</option>`;
+  if (tabs.some(tab => tab.id === current)) select.value = current;
+}
+
+function prepareSubLessonForParent(parentTabId) {
+  const parentSelect = document.getElementById("subLessonParentSelect");
+  if (parentSelect) parentSelect.value = parentTabId;
+  cancelSubLessonEdit(false);
+  document.getElementById("subLessonTabTitle")?.focus();
+}
+
+function cancelSubLessonEdit(clearParent = true) {
+  document.getElementById("editingSubLessonParentId").value = "";
+  document.getElementById("editingSubLessonId").value = "";
+  document.getElementById("subLessonTabTitle").value = "";
+  document.getElementById("subLessonTabContent").value = "";
+  const button = document.getElementById("saveSubLessonTabButton");
+  if (button) button.textContent = "Add Sub-Lesson Tab";
+  if (clearParent) populateSubLessonParentSelect();
+}
+
+async function saveSubLessonTab() {
+  if (currentUser?.role !== "admin") return alert("Admin access only.");
+  const topic = getSelectedLessonTabTopic();
+  if (!topic) return alert("Please select a topic first.");
+  const parentId = document.getElementById("editingSubLessonParentId").value || document.getElementById("subLessonParentSelect").value;
+  const subId = document.getElementById("editingSubLessonId").value;
+  const parent = topic.tabs.find(tab => tab.id === parentId);
+  if (!parent) return alert("Please select a parent Lesson Menu Tab first.");
+  parent.subtabs = Array.isArray(parent.subtabs) ? parent.subtabs : [];
+
+  const title = document.getElementById("subLessonTabTitle").value.trim();
+  const content = document.getElementById("subLessonTabContent").value.trim();
+  if (!title || !content) return alert("Please enter sub-lesson title and content.");
+
+  const original = JSON.parse(JSON.stringify(parent.subtabs));
+  let savedSubId = subId;
+  if (subId) {
+    const sub = parent.subtabs.find(item => item.id === subId);
+    if (!sub) return alert("Sub-lesson not found.");
+    sub.title = title;
+    sub.content = content;
+    sub.updatedAt = new Date().toISOString();
+  } else {
+    savedSubId = slugify(title);
+    if (parent.subtabs.some(item => item.id === savedSubId)) savedSubId = `${savedSubId}-${Date.now()}`;
+    parent.subtabs.push({ id: savedSubId, title, content, createdAt: new Date().toISOString() });
+  }
+
+  try {
+    if (API_BASE_URL) await updateLessonTabInBackend(topic.id, parent.id, { title: parent.title, content: parent.content, subtabs: parent.subtabs });
+    await saveData();
+    await refreshLessonViewAfterTabChange(topic.id, parent.id);
+    cancelSubLessonEdit(false);
+    showLessonTabStatus(subId ? "Sub-lesson tab updated." : "Sub-lesson tab added.", "success");
+  } catch (error) {
+    parent.subtabs = original;
+    renderLessonTabsList();
+    console.error(error);
+    alert(error.message || "Sub-lesson tab was not saved.");
+  }
+}
+
+function startSubLessonEdit(topicId, parentTabId, subTabId) {
+  const topic = ensureTopicShape(topics.find(t => t.id === topicId));
+  const parent = topic?.tabs?.find(tab => tab.id === parentTabId);
+  const sub = parent?.subtabs?.find(item => item.id === subTabId);
+  if (!topic || !parent || !sub) return alert("Sub-lesson not found.");
+  const topicSelect = document.getElementById("lessonTabTopicSelect");
+  if (topicSelect) topicSelect.value = topicId;
+  populateSubLessonParentSelect(topic);
+  document.getElementById("subLessonParentSelect").value = parentTabId;
+  document.getElementById("editingSubLessonParentId").value = parentTabId;
+  document.getElementById("editingSubLessonId").value = subTabId;
+  document.getElementById("subLessonTabTitle").value = sub.title || "";
+  document.getElementById("subLessonTabContent").value = sub.content || "";
+  const button = document.getElementById("saveSubLessonTabButton");
+  if (button) button.textContent = "Save Edited Sub-Lesson Tab";
+  document.getElementById("subLessonTabTitle").focus();
+}
+
+async function deleteSubLessonTab(topicId, parentTabId, subTabId) {
+  if (currentUser?.role !== "admin") return alert("Admin access only.");
+  const topic = ensureTopicShape(topics.find(t => t.id === topicId));
+  const parent = topic?.tabs?.find(tab => tab.id === parentTabId);
+  if (!topic || !parent) return alert("Sub-lesson not found.");
+  if (!confirm("Delete this sub-lesson tab?")) return;
+  const original = JSON.parse(JSON.stringify(parent.subtabs || []));
+  parent.subtabs = (parent.subtabs || []).filter(item => item.id !== subTabId);
+  try {
+    if (API_BASE_URL) await updateLessonTabInBackend(topic.id, parent.id, { title: parent.title, content: parent.content, subtabs: parent.subtabs });
+    await saveData();
+    await refreshLessonViewAfterTabChange(topic.id, parent.id);
+    showLessonTabStatus("Sub-lesson tab deleted.", "success");
+  } catch (error) {
+    parent.subtabs = original;
+    renderLessonTabsList();
+    console.error(error);
+    alert(error.message || "Sub-lesson tab was not deleted.");
+  }
 }
 
 async function saveTopicEdits() {
@@ -4163,9 +4368,9 @@ async function refreshLessonViewAfterTabChange(topicId, preferredLessonId = null
   if (currentOpenTopicId === topicId || document.getElementById("topic-detail")?.classList.contains("active-page")) {
     const topic = ensureTopicShape(topics.find(t => t.id === topicId));
     if (topic) {
-      const lessonToOpen = preferredLessonId && (preferredLessonId === "discussion" || preferredLessonId === "practice" || topic.tabs.some(tab => tab.id === preferredLessonId))
+      const lessonToOpen = preferredLessonId && topic.tabs.some(tab => tab.id === preferredLessonId)
         ? preferredLessonId
-        : (topic.tabs.some(tab => tab.id === currentOpenLessonId) ? currentOpenLessonId : "discussion");
+        : (topic.tabs.some(tab => tab.id === currentOpenLessonId) ? currentOpenLessonId : topic.tabs[0]?.id || null);
       openTopic(topicId, lessonToOpen);
     }
   }
@@ -4182,7 +4387,7 @@ async function addLessonTab() {
 
   let id = slugify(title);
   if ((topic.tabs || []).some(tab => tab.id === id)) id = `${id}-${Date.now()}`;
-  const newTab = { id, title, content, createdAt: new Date().toISOString() };
+  const newTab = { id, title, content, subtabs: [], createdAt: new Date().toISOString() };
   topic.tabs.push(newTab);
 
   try {
@@ -4216,7 +4421,7 @@ async function deleteLessonTab(topicId, tabId) {
   try {
     if (API_BASE_URL) await deleteLessonTabInBackend(topic.id, tabId);
     await saveData();
-    await refreshLessonViewAfterTabChange(topic.id, "discussion");
+    await refreshLessonViewAfterTabChange(topic.id, topic.tabs[0]?.id || null);
     showLessonTabStatus("Lesson tab deleted. The current list and actual lesson page were refreshed.", "success");
     alert("Lesson tab deleted successfully and is no longer visible in the actual lesson page.");
   } catch (error) {
@@ -7361,8 +7566,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       );
       document.getElementById("otpBox").classList.remove("hidden-by-role");
       const preview = document.getElementById("otpPreviewText");
-      if (preview) preview.textContent = data.otpPreview ? `Demo OTP: ${data.otpPreview}` : "OTP sent. Check your email.";
-      setMessage("registerMessage", data.message || "OTP sent. Please enter the OTP to complete registration.", "success");
+      if (preview) preview.textContent = "OTP sent to your email. Please check your inbox or spam folder.";
+      setMessage("registerMessage", data.message || "OTP sent to your email. Please enter the OTP to complete registration.", "success");
     } catch (error) { setMessage("registerMessage", error.message, "error"); }
   });
 
@@ -7492,18 +7697,15 @@ function getSubjectColor(subjectId) {
 
 /* Override openTopic so clicked topic also changes subject background */
 const originalOpenTopicForTheme = typeof openTopic === "function" ? openTopic : null;
-function openTopic(topicId, initialLessonId = "discussion") {
+function openTopic(topicId, initialLessonId = null) {
   currentOpenTopicId = topicId;
-  currentOpenLessonId = initialLessonId || "discussion";
   const topic = ensureTopicShape(topics.find(t => t.id === topicId));
   if (topic?.subject) applySubjectTheme(topic.subject);
   const content = document.getElementById("topicContent");
   const customTabs = topic.tabs || [];
-  const menuItems = [
-    { id: "discussion", title: "Discussion" },
-    ...customTabs.map(tab => ({ id: tab.id, title: tab.title })),
-    { id: "practice", title: "Practice" }
-  ];
+  const firstLessonId = customTabs[0]?.id || null;
+  currentOpenLessonId = initialLessonId || firstLessonId;
+  const menuItems = customTabs.map(tab => ({ id: tab.id, title: tab.title }));
   const menuButtons = menuItems.map(item => `
       <button type="button" class="lesson-menu-btn" data-lesson-id="${escapeHtml(item.id)}" onclick="showTopicLesson('${escapeJs(topic.id)}', '${escapeJs(item.id)}')">${escapeHtml(item.title)}</button>
     `).join("");
@@ -7521,8 +7723,8 @@ function openTopic(topicId, initialLessonId = "discussion") {
     </article>
   `;
   showPage("topic-detail");
-  showTopicLesson(topic.id, initialLessonId || "discussion");
-  localStorage.setItem(getStudentStorageKey("lastLesson"), JSON.stringify({ topicId: topic.id, lessonId: initialLessonId || "discussion" }));
+  showTopicLesson(topic.id, currentOpenLessonId);
+  localStorage.setItem(getStudentStorageKey("lastLesson"), JSON.stringify({ topicId: topic.id, lessonId: currentOpenLessonId }));
 }
 
 /* Student preview also demonstrates subject-specific background color */

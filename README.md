@@ -88,3 +88,37 @@ GET /api/health
 ## Next recommended upgrade
 
 For public production use, migrate from `backend/data/database.json` to Supabase PostgreSQL with Row Level Security and Supabase Storage for receipt images.
+
+## Real Email OTP Setup
+
+The registration OTP is now sent by email and is no longer displayed on the website.
+
+Add these environment variables in Render > Environment:
+
+```env
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
+OTP_FROM_EMAIL=your-email@gmail.com
+```
+
+For Gmail, use an App Password instead of your normal Gmail password. After adding the variables, redeploy the Render service.
+
+## Lesson/Sub-Lesson Data Shape
+
+Lesson tabs now support nested sub-lessons:
+
+```json
+{
+  "id": "key-concepts",
+  "title": "Key Concepts",
+  "content": "Main tab content",
+  "subtabs": [
+    { "id": "recognition", "title": "Recognition", "content": "Sub-lesson content" }
+  ]
+}
+```
+
+The `/api/topics/:id/tabs/:tabId` update route accepts `subtabs` and normalizes them before saving.

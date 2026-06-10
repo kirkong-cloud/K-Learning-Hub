@@ -4,6 +4,7 @@ const morgan = require("morgan");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const nodemailer = require("nodemailer");
 const { v4: uuidv4 } = require("uuid");
 require("dotenv").config();
 
@@ -14,6 +15,46 @@ const TOKEN_SECRET = process.env.TOKEN_SECRET || "change-this-secret-before-depl
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
 const TOKEN_TTL_HOURS = Number(process.env.TOKEN_TTL_HOURS || 8);
 const MAX_RECEIPT_BYTES = Number(process.env.MAX_RECEIPT_BYTES || 750000);
+
+const SMTP_HOST = process.env.SMTP_HOST || "";
+const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
+const SMTP_SECURE = String(process.env.SMTP_SECURE || "false").toLowerCase() === "true";
+const SMTP_USER = process.env.SMTP_USER || "";
+const SMTP_PASS = process.env.SMTP_PASS || "";
+const OTP_FROM_EMAIL = process.env.OTP_FROM_EMAIL || SMTP_USER || "";
+
+function isEmailConfigured() {
+  return Boolean(SMTP_HOST && SMTP_USER && SMTP_PASS && OTP_FROM_EMAIL);
+}
+
+async function sendOtpEmail(toEmail, otp, name = "Student") {
+  if (!isEmailConfigured()) {
+    throw new Error("Email OTP service is not configured. Please add SMTP settings in Render Environment Variables.");
+  }
+  const transporter = nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: SMTP_SECURE,
+    auth: { user: SMTP_USER, pass: SMTP_PASS }
+  });
+
+  await transporter.sendMail({
+    from: `K Learning Hub <${OTP_FROM_EMAIL}>`,
+    to: toEmail,
+    subject: "Your K Learning Hub Registration OTP",
+    text: `Hello ${name},\n\nYour K Learning Hub registration OTP is ${otp}. It will expire in 10 minutes.\n\nIf you did not request this, please ignore this email.`,
+    html: `
+      <div style="font-family: Arial, sans-serif; line-height:1.5; color:#0f2746;">
+        <h2>K Learning Hub Registration OTP</h2>
+        <p>Hello ${sanitizeText(name, 80) || "Student"},</p>
+        <p>Your 6-digit OTP is:</p>
+        <p style="font-size:28px; font-weight:700; letter-spacing:4px; color:#0b63ce;">${otp}</p>
+        <p>This OTP will expire in <strong>10 minutes</strong>.</p>
+        <p>If you did not request this, please ignore this email.</p>
+      </div>
+    `
+  });
+}
 
 const allowedOrigins = (process.env.FRONTEND_URL || "*").split(",").map(v => v.trim()).filter(Boolean);
 app.disable("x-powered-by");
@@ -121,8 +162,21 @@ function activateSubscription(user, planType = "per_subject", subject = "FAR", m
 }
 
 function ensureTopicShape(topic) {
-  topic.tabs = Array.isArray(topic.tabs) ? topic.tabs : [];
+  if (!topic) return topic;
+  topic.tabs = normalizeLessonTabs(topic.tabs || []);
   return topic;
+}
+
+function normalizeSubLessonTabs(subtabs = []) {
+  return Array.isArray(subtabs)
+    ? subtabs.filter(Boolean).map((subtab, index) => ({
+        id: String(subtab.id || slugify(subtab.title || `sub-lesson-${index + 1}`)).trim(),
+        title: String(subtab.title || "Untitled Sub-Lesson").trim(),
+        content: String(subtab.content || "").trim(),
+        createdAt: subtab.createdAt || new Date().toISOString(),
+        updatedAt: subtab.updatedAt
+      }))
+    : [];
 }
 
 function normalizeLessonTabs(tabs = []) {
@@ -131,6 +185,7 @@ function normalizeLessonTabs(tabs = []) {
         id: String(tab.id || slugify(tab.title || `lesson-tab-${index + 1}`)).trim(),
         title: String(tab.title || "Untitled Lesson Tab").trim(),
         content: String(tab.content || "").trim(),
+        subtabs: normalizeSubLessonTabs(tab.subtabs || []),
         createdAt: tab.createdAt || new Date().toISOString(),
         updatedAt: tab.updatedAt
       }))
@@ -397,7 +452,7 @@ app.get("/api/health", (req, res) => {
 });
 
 
-app.post("/api/auth/send-registration-otp", rateLimit({ windowMs: 15 * 60 * 1000, max: 5 }), (req, res) => {
+app.post("/api/auth/send-registration-otp", rateLimit({ windowMs: 15 * 60 * 1000, max: 5 }), async (req, res) => {
   const name = String(req.body.name || "").trim();
   const contactNumber = String(req.body.contactNumber || "").trim();
   const email = String(req.body.email || "").trim().toLowerCase();
@@ -407,6 +462,7 @@ app.post("/api/auth/send-registration-otp", rateLimit({ windowMs: 15 * 60 * 1000
   if (!contactNumber) return res.status(400).json({ error: "Contact number is required." });
   if (!isValidEmail(email)) return res.status(400).json({ error: "Valid email address is required." });
   if (!isStrongPassword(password)) return res.status(400).json({ error: "Password must have at least 8 characters, uppercase, lowercase, and number." });
+  if (!isEmailConfigured()) return res.status(500).json({ error: "Email OTP service is not configured. Please contact the administrator." });
 
   const db = readDatabase();
   if (db.users.some(u => u.email === email)) return res.status(409).json({ error: "Email already registered." });
@@ -419,14 +475,19 @@ app.post("/api/auth/send-registration-otp", rateLimit({ windowMs: 15 * 60 * 1000
     name,
     contactNumber,
     passwordHash: hashPassword(password),
-    expiresAt: addDays(new Date(), 0).getTime ? new Date(Date.now() + 10 * 60 * 1000).toISOString() : new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+    expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
     createdAt: new Date().toISOString()
   });
-  writeDatabase(db);
 
-  // Demo/development note: this returns otpPreview so you can test without an email/SMS provider.
-  // In production, send the OTP through an email service such as Gmail SMTP, SendGrid, or Resend and remove otpPreview.
-  res.json({ message: "OTP generated. Enter the 6-digit OTP to continue registration.", ...(IS_PRODUCTION ? {} : { otpPreview: otp }) });
+  try {
+    await sendOtpEmail(email, otp, name);
+    writeDatabase(db);
+    auditLog(db, { action: "registration_otp_sent", target: email, actor: "system" });
+    writeDatabase(db);
+    res.json({ message: "OTP sent to your email. Please check your inbox or spam folder, then enter the 6-digit code." });
+  } catch (error) {
+    return res.status(500).json({ error: error.message || "Unable to send OTP email." });
+  }
 });
 
 app.post("/api/auth/register", rateLimit({ windowMs: 15 * 60 * 1000, max: 10 }), (req, res) => {
@@ -567,7 +628,7 @@ app.post("/api/topics/:id/tabs", requireAuth, requireAdmin, (req, res) => {
 
   let id = String(req.body.id || slugify(title)).trim();
   if (topic.tabs.some(tab => tab.id === id)) id = `${id}-${Date.now()}`;
-  const tab = { id, title, content, createdAt: new Date().toISOString() };
+  const tab = { id, title, content, subtabs: normalizeSubLessonTabs(req.body.subtabs || []), createdAt: new Date().toISOString() };
   topic.tabs.push(tab);
   topic.updatedAt = new Date().toISOString();
   logAudit(db, req, "lesson_tab_created", { topicId: topic.id, tabId: tab.id, title: tab.title });
@@ -588,6 +649,7 @@ app.put("/api/topics/:id/tabs/:tabId", requireAuth, requireAdmin, (req, res) => 
 
   tab.title = title;
   tab.content = content;
+  if (Array.isArray(req.body.subtabs)) tab.subtabs = normalizeSubLessonTabs(req.body.subtabs);
   tab.updatedAt = new Date().toISOString();
   topic.updatedAt = new Date().toISOString();
   logAudit(db, req, "lesson_tab_updated", { topicId: topic.id, tabId: tab.id, title: tab.title });

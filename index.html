@@ -151,7 +151,7 @@
             <div id="otpBox" class="otp-box hidden-by-role">
               <label>Enter OTP sent to email</label>
               <input type="text" id="registerOtp" maxlength="6" placeholder="6-digit OTP" />
-              <small id="otpPreviewText" class="muted-text"></small>
+              <small id="otpPreviewText" class="muted-text">OTP will be sent to the email address above.</small>
             </div>
             <p class="notice">New registrations are created as <strong>Student</strong> accounts. Email OTP verification is required first, then admin approval is required before login.</p>
             <button class="btn secondary" type="submit">Verify OTP and Submit Registration</button>
@@ -562,6 +562,9 @@
             <input id="lessonTabTitle" placeholder="Example: Journal Entries" />
             <label>Tab Discussion / Content</label>
             <div class="template-toolbar">
+              <button type="button" class="btn ghost small-btn" onclick="formatTextareaSelection('lessonTabContent', 'bold')">Bold</button>
+              <button type="button" class="btn ghost small-btn" onclick="formatTextareaSelection('lessonTabContent', 'italic')">Italic</button>
+              <button type="button" class="btn ghost small-btn" onclick="formatTextareaSelection('lessonTabContent', 'underline')">Underline</button>
               <button type="button" class="btn ghost small-btn" onclick="insertTemplate('lessonTabContent', 'tAccount')">Insert Designed T-Account</button>
               <button type="button" class="btn ghost small-btn" onclick="insertTemplate('lessonTabContent', 'accountingFormat')">Insert Designed Accounting Format</button>
               <button type="button" class="btn ghost small-btn" onclick="insertTemplate('lessonTabContent', 'tableForm')">Insert Table Form</button>
@@ -576,6 +579,9 @@
               <input id="editLessonTabTitle" placeholder="Example: Journal Entries" />
               <label>Edit Tab Discussion / Content</label>
               <div class="template-toolbar">
+                <button type="button" class="btn ghost small-btn" onclick="formatTextareaSelection('editLessonTabContent', 'bold')">Bold</button>
+                <button type="button" class="btn ghost small-btn" onclick="formatTextareaSelection('editLessonTabContent', 'italic')">Italic</button>
+                <button type="button" class="btn ghost small-btn" onclick="formatTextareaSelection('editLessonTabContent', 'underline')">Underline</button>
                 <button type="button" class="btn ghost small-btn" onclick="insertTemplate('editLessonTabContent', 'tAccount')">Insert Designed T-Account</button>
                 <button type="button" class="btn ghost small-btn" onclick="insertTemplate('editLessonTabContent', 'accountingFormat')">Insert Designed Accounting Format</button>
                 <button type="button" class="btn ghost small-btn" onclick="insertTemplate('editLessonTabContent', 'tableForm')">Insert Table Form</button>
@@ -584,6 +590,31 @@
               <div class="button-row">
                 <button class="btn primary" onclick="saveLessonTabEdit()">Save Edited Tab</button>
                 <button class="btn ghost" onclick="cancelLessonTabEdit()">Cancel</button>
+              </div>
+            </div>
+
+            <div id="subLessonTabPanel" class="edit-panel">
+              <h4>Add Sub-Lesson Menu Tab</h4>
+              <p class="muted-text small-note">Sub-lessons appear inside the selected Lesson Menu Tab. Example: under “Key Concepts,” add “Recognition Criteria,” “Initial Cost,” and “Dismantling Obligation.”</p>
+              <input type="hidden" id="editingSubLessonParentId" />
+              <input type="hidden" id="editingSubLessonId" />
+              <label>Parent Lesson Menu Tab</label>
+              <select id="subLessonParentSelect"></select>
+              <label>Sub-Lesson Title</label>
+              <input id="subLessonTabTitle" placeholder="Example: Recognition Criteria" />
+              <label>Sub-Lesson Content</label>
+              <div class="template-toolbar">
+                <button type="button" class="btn ghost small-btn" onclick="formatTextareaSelection('subLessonTabContent', 'bold')">Bold</button>
+                <button type="button" class="btn ghost small-btn" onclick="formatTextareaSelection('subLessonTabContent', 'italic')">Italic</button>
+                <button type="button" class="btn ghost small-btn" onclick="formatTextareaSelection('subLessonTabContent', 'underline')">Underline</button>
+                <button type="button" class="btn ghost small-btn" onclick="insertTemplate('subLessonTabContent', 'tAccount')">Insert Designed T-Account</button>
+                <button type="button" class="btn ghost small-btn" onclick="insertTemplate('subLessonTabContent', 'accountingFormat')">Insert Designed Accounting Format</button>
+                <button type="button" class="btn ghost small-btn" onclick="insertTemplate('subLessonTabContent', 'tableForm')">Insert Table Form</button>
+              </div>
+              <textarea id="subLessonTabContent" rows="6" placeholder="Enter sub-lesson discussion or computation."></textarea>
+              <div class="button-row">
+                <button class="btn primary" id="saveSubLessonTabButton" onclick="saveSubLessonTab()">Add Sub-Lesson Tab</button>
+                <button class="btn ghost" onclick="cancelSubLessonEdit()">Clear</button>
               </div>
             </div>
 
